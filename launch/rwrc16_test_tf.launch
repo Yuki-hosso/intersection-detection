@@ -1,0 +1,18 @@
+<?xml version="1.0"?>
+<launch>
+	<!-- <node pkg="tf" type="static_transform_publisher" name="map2world" args="31.3 -7.8 0.0 1.54461 0.0 0.0 map world 100"/> -->
+	<!-- <node pkg="tf" type="static_transform_publisher" name="world2map" args="-31.0 8.0 0.0 0.0 0.0 0.0 world global_obstacle_map 100"/> -->
+	<!-- <node pkg="tf" type="static_transform_publisher" name="map2local_map" args="0.0 0.0 0.0 0.0 0.0 0.0 map local_map 100"/> -->
+	<!-- <node pkg="tf" type="static_transform_publisher" name="global_obstacle_map2map" args="0.0 0.0 0.0 0.1134464 0.0 0.0 global_obstacle_map map 100"/> -->
+	<!-- <node pkg="tf" type="static_transform_publisher" name="map2glonal_obstacle_map" args="0.0 0.0 0.0 0.0 0.0 0.0 map global_obstacle_map 100"/> -->
+	<!-- <node pkg="tf" type="static_transform_publisher" name="map2global_obstacle_map" args="0.0 0.0 0.0 -0.1134464 0.0 0.0 map global_obstacle_map 100"/> -->
+	<!-- <node pkg="tf" type="static_transform_publisher" name="map2obstacle_cell" args="0.0 0.0 0.0 -0.1221730 0.0 0.0 map obstacle_cell 100"/> -->
+	<!-- <node pkg="tf" type="static_transform_publisher" name="map2obstacle_cell" args="0.0 0.0 0.0 0.0 0.0 0.0 map obstacle_cell 100"/> -->
+	<!-- <node pkg="tf" type="static_transform_publisher" name="global_obstacle_map2obstacle_cell" args="0.0 0.0 0.0 0.0 0.0 0.0 global_obstacle_map obstacle_cell 100"/> -->
+	<!-- <node pkg="tf" type="static_transform_publisher" name="matching_base_linlk2static_local_map" args="0.0 0.0 0.0 -1.57075 0.0 0.0 matching_base_link static_local_map 100"/> -->
+	<!-- <node pkg="tf" type="static_transform_publisher" name="matching_base_linlk2static_local_map" args="0.0 0.0 0.0 0.0 0.0 0.0 matching_base_link static_local_map 100"/> -->
+	<!-- <node pkg="tf" type="static_transform_publisher" name="matching_base_linlk2velodyne" args="0.0 0.0 1.385 -1.57075 0.0 0.0 matching_base_link velodyne 100"/> -->
+	<!-- <node pkg="tf" type="static_transform_publisher" name="matching_base_linlk2velodyne" args="0.0 0.0 1.385 0.0 0.0 0.0 matching_base_link velodyne 100"/> -->
+	<!-- <node pkg="tf" type="static_transform_publisher" name="matching_base_linlk2obstacle_local_map" args="0.0 0.0 0.0 -1.57075 0.0 0.0 matching_base_link obstacle_local_map 100"/> -->
+	<!-- <node pkg="tf" type="static_transform_publisher" name="matching_base_linlk2obstacle_local_map" args="0.0 0.0 0.0 0.0 0.0 0.0 matching_base_link obstacle_local_map 100"/> -->
+</launch>

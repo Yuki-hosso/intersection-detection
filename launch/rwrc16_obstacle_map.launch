@@ -1,0 +1,5 @@
+<?xml version="1.0"?>
+<launch>
+	<node name="global_obstacle_map_creater" pkg="my_pcl_tutorial" type="global_obstacle_map_creater"/>
+	<node name="example11" pkg="my_pcl_tutorial" type="example11"/>
+</launch>

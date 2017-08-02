@@ -1,0 +1,12 @@
+<?xml version="1.0"?>
+<launch>
+	<node name="infant_height_map_220" pkg="my_pcl_tutorial" type="infant_height_map_220"/> 
+	<node name="infant_height_map_221" pkg="my_pcl_tutorial" type="infant_height_map_221"/> 
+	<node name="infant_height_map_222" pkg="my_pcl_tutorial" type="infant_height_map_222"/> 
+	
+	<node name="infant_curvature_220_new" pkg="my_pcl_tutorial" type="infant_curvature_220_new"/>
+	<node name="infant_curvature_221_new" pkg="my_pcl_tutorial" type="infant_curvature_221_new"/>
+	<node name="infant_curvature_222_new" pkg="my_pcl_tutorial" type="infant_curvature_222_new"/>
+
+	<node name="create_tom_laser_local_map" pkg="my_pcl_tutorial" type="create_tom_laser_local_map"/>
+</launch>

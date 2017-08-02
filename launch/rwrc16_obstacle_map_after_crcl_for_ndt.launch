@@ -1,0 +1,8 @@
+<?xml version="1.0"?>
+<launch>
+	<!--node name="global_obstacle_map_creater_after_crcl_for_ndt" pkg="my_pcl_tutorial" type="global_obstacle_map_creater_after_crcl_for_ndt"/-->
+	<node name="global_obstacle_map_creater_after_crcl_for_3d_ndt" pkg="my_pcl_tutorial" type="global_obstacle_map_creater_after_crcl_for_3d_ndt"/>
+	<!-- <node name="global_obstacle_map_creater_after_crcl_for_ndt" pkg="my_pcl_tutorial" type="global_obstacle_map_creater_after_crcl_for_3d_ndt"/> -->
+	<node name="example11_ver2" pkg="my_pcl_tutorial" type="example11_ver2"/>
+	<!-- <node name="example11_with_tom_laser" pkg="my_pcl_tutorial" type="example11_with_tom_laser"/> -->
+</launch>

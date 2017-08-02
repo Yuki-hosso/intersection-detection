@@ -1,0 +1,413 @@
+#include <ros/ros.h>
+#include <sensor_msgs/PointCloud2.h>
+#include <pcl_ros/point_cloud.h>
+// PCL specific includes
+#include <pcl_conversions/pcl_conversions.h>
+#include <pcl/point_cloud.h>
+#include <pcl/point_types.h>
+#include <pcl/filters/voxel_grid.h>
+#include <pcl/visualization/cloud_viewer.h>
+#include <iostream>
+#include <pcl/io/io.h>
+#include <pcl/io/pcd_io.h>
+
+#include <boost/thread/thread.hpp>
+#include <pcl/visualization/pcl_visualizer.h>
+#include <pcl/common/common_headers.h>
+#include <pcl/features/normal_3d.h>
+#include <pcl/console/parse.h>
+
+#include <nav_msgs/OccupancyGrid.h>
+#include <nav_msgs/GridCells.h>
+#include <geometry_msgs/Point.h>
+#include <geometry_msgs/PoseStamped.h>
+
+#include <tf/transform_broadcaster.h>
+#include <tf/transform_listener.h>
+#include <math.h>
+
+using namespace std;
+
+
+pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_data (new pcl::PointCloud<pcl::PointXYZ>);
+// pcl::PointCloud<pcl::PointXYZ> temp_cloud;
+pcl::PointCloud<pcl::PointXYZ>::Ptr temp_cloud (new pcl::PointCloud<pcl::PointXYZ>);
+pcl::PointCloud<pcl::PointXYZ>::Ptr temp_cloud_dash (new pcl::PointCloud<pcl::PointXYZ>);
+
+sensor_msgs::PointCloud2 cloud2;
+sensor_msgs::PointCloud2 cloud2_dash;
+
+nav_msgs::OccupancyGrid obstacle_map;
+nav_msgs::GridCells obstacle_cell;
+
+nav_msgs::OccupancyGrid local_map;
+nav_msgs::OccupancyGrid local_map_tf;
+
+double min_height = -0.5;
+double max_height = 0.5;
+
+const float W = 100;
+const float H = 100;
+
+const float min_x = 0.0;
+const float min_y = 0.0;
+
+const float R = 0.1;
+
+float local_x = 0.0;
+float local_y = 0.0;
+float local_theta = 0.0 / 180.0 * M_PI;
+const float local_W = 20;
+const float local_H = 20;
+
+
+// boost::shared_ptr<pcl::visualization::PCLVisualizer> simpleVis (pcl::PointCloud<pcl::PointXYZ>::Ptr cloud)
+// {
+  // --------------------------------------------
+  // -----Open 3D viewer and add point cloud-----
+  // --------------------------------------------
+  // boost::shared_ptr<pcl::visualization::PCLVisualizer> viewer (new pcl::visualization::PCLVisualizer ("3D Viewer"));
+  // viewer->setBackgroundColor (0, 0, 0);
+  // viewer->addPointCloud<pcl::PointXYZ> (cloud, "test velodyne");
+  // viewer->setPointCloudRenderingProperties (pcl::visualization::PCL_VISUALIZER_POINT_SIZE, 1, "test velodyne");
+  // viewer->addCoordinateSystem (1.0);
+  // viewer->initCameraParameters ();
+  // return (viewer);
+// }
+
+void PointXYZ_to_PointCloud2(pcl::PointCloud<pcl::PointXYZ>::Ptr *input, sensor_msgs::PointCloud2 *output){
+	pcl::PCLPointCloud2 pcl_cloud2;
+	pcl::toPCLPointCloud2(**input, pcl_cloud2);
+	pcl_conversions::fromPCL(pcl_cloud2, *output);
+}
+
+void PointCloud2_to_PointXYZ(sensor_msgs::PointCloud2 *input, pcl::PointCloud<pcl::PointXYZ>::Ptr *output){
+	pcl::PCLPointCloud2 pcl_cloud2;
+	pcl_conversions::toPCL(*input, pcl_cloud2);
+	pcl::fromPCLPointCloud2(pcl_cloud2, **output);
+}
+
+void remove_point_by_heght(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud){
+		pcl::PCLPointCloud2 pcl_cloud2;
+		// pcl::PointCloud<pcl::PointXYZ>::Ptr temp_cloud (new pcl::PointCloud<pcl::PointXYZ>);
+
+		int j = 0;
+
+		// cout<<"cloud->points.x : "<<cloud->points[0].x<<endl;
+		// cout<<"cloud->points.y : "<<cloud->points[0].y<<endl;
+		// cout<<"cloud->points.z : "<<cloud->points[0].z<<endl;
+		// cout<<"couud->points.size() : "<<cloud->points.size()<<endl;
+		for(size_t i = 0; i < cloud->points.size(); i++){
+			if(min_height < cloud->points[i].z && cloud->points[i].z < max_height){
+				// cout<<"cloud->points["<<i<<"].x : "<<cloud->points[i].x<<endl;
+				// cout<<"cloud->points["<<i<<"].y : "<<cloud->points[i].y<<endl;
+				// cout<<"cloud->points["<<i<<"].z : "<<cloud->points[i].z<<endl;
+				// cout<<endl;
+				pcl::PointXYZ temp_point;
+
+				temp_point.x = cloud->points[i].x;
+				temp_point.y = cloud->points[i].y;
+				temp_point.z = cloud->points[i].z;
+				
+				// cout<<"temp_point.x : "<<temp_point.x<<endl;
+				// cout<<"temp_point.y : "<<temp_point.y<<endl;
+				// cout<<"temp_point.z : "<<temp_point.z<<endl;
+				temp_cloud->push_back(temp_point);
+				temp_cloud_dash->push_back(temp_point);
+				// temp_cloud->points[j].x = cloud->points[i].x;
+				// temp_cloud->points[j].y = cloud->points[i].y;
+				// temp_cloud->points[j].z = cloud->points[i].z;
+				// j++;
+			}
+		}
+		temp_cloud->width = temp_cloud->points.size();
+		temp_cloud->height = 1;
+		for(size_t i = 0; i < temp_cloud->points.size(); i++){
+			// cout<<"temp_cloud->points["<<i<<"].x : "<<temp_cloud->points[i].x<<endl;
+			// cout<<"temp_cloud->points["<<i<<"].y : "<<temp_cloud->points[i].y<<endl;
+			// cout<<"temp_cloud->points["<<i<<"].z : "<<temp_cloud->points[i].z<<endl;
+			temp_cloud->points[i].z = 0.0;
+			// cout<<"temp_cloud->points["<<i<<"].x : "<<temp_cloud->points[i].x<<endl;
+			// cout<<"temp_cloud->points["<<i<<"].y : "<<temp_cloud->points[i].y<<endl;
+			// cout<<"temp_cloud->points["<<i<<"].z : "<<temp_cloud->points[i].z<<endl;
+			
+		}
+		// pcl::toPCLPointCloud2(*cloud, pcl_cloud2);
+		// pcl_conversions::fromPCL(pcl_cloud2, cloud2);
+		// PointXYZ_to_PointCloud2(&temp_cloud, &cloud2);
+		// PointXYZ_to_PointCloud2(&cloud, &cloud2);
+		// cout<<cloud2<<endl;
+}
+
+
+void create_obstacle_map(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud, nav_msgs::OccupancyGrid *map){
+	vector<int>	count((long(W/R) * long(H/R)), 0);
+	geometry_msgs::Point obstacle_point;
+	// vector<int>::iterator a;
+	// for(a = count.begin(); a != count.end(); a++){
+		// cout<<"a : "<<*a<<endl;
+	// }
+	// for(int i = 0;i<count.size(); i++){
+		// cout<<count[i]<<endl;
+	// }
+	// vector<int8_t>::iterator mit;
+	// for(mit=map->data.begin(); mit != map->data.end();mit++){
+		// *mit=0;
+	// }
+	for(int i = 0; i != map->data.size(); i++){
+		map->data[i] = 0;
+		// cout<<"map->data["<<i<<"] : "<<map->data[i]<<endl;
+	}
+	// cout<<"cloud->points.size() : "<<cloud->points.size()<<endl;	
+	for(size_t i = 0; i < cloud->points.size(); i++){
+		// cout<<"i : "<<i<<endl;
+		int x = int((cloud->points[i].x - map->info.origin.position.x) / R);
+		// cout<<"x : "<<x<<endl;
+		int y = int((cloud->points[i].y - map->info.origin.position.y) / R);
+		// cout<<"y : "<<y<<endl;
+		// cout<<"map->width : "<<map->info.width<<endl;
+		if((0 <= x && x < W/R) && (0 <= y && y < H/R)){
+			long num = x + y * map->info.width;
+			// cout<<"map->data.size() : "<<map->data.size()<<endl;
+			// cout<<"num : "<<num<<endl;
+			// map->data[num] = 100;
+			count[num] += 1; 
+		}
+	}
+
+	// for(int i = 0; i != map->data.size(); i++){
+		// if(map->data[i] == 100){
+			// cout<<"map->data["<<i<<"] : "<<map->data[i]<<endl;
+		// }
+	// }
+	for(int i = 0;i<count.size(); i++){
+		if(count[i] > 10){
+			// cout<<"count["<<i<<"] : "<<count[i]<<endl;
+			map->data[i] = 100;
+			obstacle_point.x = (i % map->info.width) * R + map->info.origin.position.x;
+			obstacle_point.y = int(i / map->info.width) * R + map->info.origin.position.y;
+			obstacle_point.z = 0;
+			obstacle_cell.cells.push_back(obstacle_point);
+		}
+	}
+
+}
+
+void expand_circle(int x0, int y0, int radius, nav_msgs::OccupancyGrid *map){
+	int x = radius;
+	int y = 0;
+	int err = 0;
+	
+		// cout<<endl;
+		// cout<<"x0 : "<<x0<<endl;
+		// cout<<"W/R : "<<W/R<<endl;
+		// cout<<"y0 : "<<y0<<endl;
+		// cout<<"H/R : "<<H/R<<endl;
+		// cout<<"radius : "<<radius<<endl;
+		while(x >= y){
+			if((radius <= x0 && x0 < (W/R-radius)) && (radius <= y0 && y0 < (H/R-radius))){
+				// cout<<"(x0+x)+(y0+y)*map->info.width : "<<(x0+x)+(y0+y)*map->info.width<<endl;
+				// cout<<"(x0+x) : "<<x0+x<<", (y0+y) : "<<y0+y<<endl;
+				map->data[(x0+x)+(y0+y)*map->info.width] = 100;
+				// cout<<"(x0+y)+(y0+x)*map->info.width : "<<(x0+y)+(y0+x)*map->info.width<<endl;
+				// cout<<"(x0+y) : "<<x0+y<<", (y0+x) : "<<y0+x<<endl;
+				map->data[(x0+y)+(y0+x)*map->info.width] = 100;
+				// cout<<"(x0-y)+(y0+x)*map->info.width : "<<(x0-y)+(y0+x)*map->info.width<<endl;
+				// cout<<"(x0-y) : "<<x0-y<<", (y0+x) : "<<y0+x<<endl;
+				map->data[(x0-y)+(y0+x)*map->info.width] = 100;
+				// cout<<"(x0-x)+(y0+y)*map->info.width : "<<(x0-x)+(y0+y)*map->info.width<<endl;
+				// cout<<"(x0-x) : "<<x0-x<<", (y0+y) : "<<y0+y<<endl;
+				map->data[(x0-x)+(y0+y)*map->info.width] = 100;
+				// cout<<"(x0-x)+(y0-y)*map->info.width : "<<(x0-x)+(y0-y)*map->info.width<<endl;
+				// cout<<"(x0-x) : "<<x0-x<<", (y0-y) : "<<y0-y<<endl;
+				map->data[(x0-x)+(y0-y)*map->info.width] = 100;
+				// cout<<"(x0-y)+(y0-x)*map->info.width : "<<(x0-y)+(y0-x)*map->info.width<<endl;
+				// cout<<"(x0-y) : "<<x0-y<<", (y0-x) : "<<y0-x<<endl;
+				map->data[(x0-y)+(y0-x)*map->info.width] = 100;
+				// cout<<"(x0+y)+(y0-x)*map->info.width : "<<(x0+y)+(y0-x)*map->info.width<<endl;
+				// cout<<"(x0+y) : "<<x0+y<<", (y0-x) : "<<y0-x<<endl;
+				map->data[(x0+y)+(y0-x)*map->info.width] = 100;
+				// cout<<"(x0+x)+(y0-y)*map->info.width : "<<(x0+x)+(y0-y)*map->info.width<<endl;
+				// cout<<"(x0+x) : "<<x0+x<<", (y0-y) : "<<y0-y<<endl;
+				map->data[(x0+x)+(y0-y)*map->info.width] = 100;
+			}
+				
+			y+=1;
+			err += 1 + 2*y;
+			if(2*(err-x)+1>0){
+				x -= 1;
+				err += 1 -2*x;
+			}
+		}
+}
+
+void expandObstacle(nav_msgs::OccupancyGrid *map_in){
+	// cout<<"map_in->info.height : "<<map_in->info.height<<endl;
+	// cout<<"map_in->info.width : "<<map_in->info.width<<endl;
+	vector<int> x_list;
+	vector<int> y_list;
+	for(int xi=0; xi<(int)map_in->info.height; xi++){
+		for(int yi=0; yi<(int)map_in->info.width; yi++){
+			// if the cell is LETHAL
+			// cout<<"SADASDADAS"<<endl;
+			if(map_in->data[xi+map_in->info.width*yi]!=0){
+				// expand the LETHAL cells with respect to the circle radius
+				// cout<<"map_in->["<<xi+map_in->info.width*yi<<"]"<<endl;
+				// cout<<"xi : "<<xi<<endl;
+				// cout<<"yi : "<<yi<<endl<<endl;
+				x_list.push_back(xi);
+				y_list.push_back(yi);
+				// expand_circle(xi, yi, 0.20/R, map_in);
+				// expand_circle(0, 0, int(0.3/R), map_in);
+				// cout<<"map_in->["<<xi+map_in->info.width*yi<<"]"<<endl;
+				
+				// for(litr=expanded_circle.begin(); litr!=expanded_circle.end(); litr++){
+					// int x=xi+litr->i, y=yi+litr->j;
+					// if(x>=0 && x<(int)local_map.info.height && 	y>=0 && y<(int)local_map.info.width
+						// && map_in.data[xi+map_in.info.width*yi]>local_map.data[x+map_in.info.width*y]){
+						// local_map.data[x+map_in.info.width*y]=map_in.data[xi+map_in.info.width*yi];
+			}
+		}
+	}
+	// for(int i=0;i<x_list.size();i++){
+		// if(y_list[i]==0){
+			// cout<<"x_list["<<i<<"] : "<<x_list[i]<<endl;
+			// cout<<"y_list["<<i<<"] : "<<y_list[i]<<endl;
+		// }
+	// }
+	for(int i=0;i<x_list.size();i++){
+		expand_circle(x_list[i], y_list[i], int(0.4/R), map_in);
+	}
+
+}
+
+void create_local_map(float x, float y, float theta, nav_msgs::OccupancyGrid obs_map, nav_msgs::OccupancyGrid loc_map){
+	tf::TransformListener tflistener;
+	geometry_msgs::PoseStamped local_pose;
+	geometry_msgs::PoseStamped global_pose;
+	
+	local_pose.header.stamp = ros::Time::now();
+	local_pose.pose.position.x = loc_map.info.origin.position.x;
+	local_pose.pose.position.y = loc_map.info.origin.position.y;
+	local_pose.pose.position.z = loc_map.info.origin.position.z;
+	local_pose.pose.orientation = tf::createQuaternionMsgFromRollPitchYaw(0.0, 0.0, theta);
+
+
+	tflistener.transformPose("/local_map", local_pose.header.stamp, local_pose, "/map", global_pose);
+
+	cout<<"global_pose.pose.position.x : "<<global_pose.pose.position.x<<endl;
+	cout<<"global_pose.pose.position.y : "<<global_pose.pose.position.y<<endl;
+	cout<<"global_pose.pose.position.z : "<<global_pose.pose.position.z<<endl;
+
+}
+
+
+int main (int argc, char** argv){
+	// Initialize ROS
+	ros::init (argc, argv, "example8");
+	ros::NodeHandle n;
+
+	// string filename = "test_velodyne.pcd";
+	string filename = "map_0.pcd";
+	// string filename = "map_ds.pcd";
+	if(pcl::io::loadPCDFile (filename, *cloud_data) == -1){
+		PCL_ERROR("Couldn't read file '%s'", filename.c_str());
+		return -1;
+	}
+
+	remove_point_by_heght(cloud_data);
+	PointXYZ_to_PointCloud2(&temp_cloud, &cloud2);
+	PointXYZ_to_PointCloud2(&temp_cloud_dash, &cloud2_dash);
+	
+	// pcl::io::loadPCDFile ("test_velodyne.pcd", *cloud_data);
+
+	// boost::shared_ptr<pcl::visualization::PCLVisualizer> viewer;
+	// viewer = simpleVis(cloud_data);
+	// pcl::PointCloud<pcl::PointXYZ>::Ptr temp_cloud_ptr(&temp_cloud);
+	// viewer = simpleVis(temp_cloud);
+    
+	// viewer.showCloud(cloud);
+	
+	ros::Publisher pub = n.advertise<sensor_msgs::PointCloud2>("/output", 1);
+	ros::Publisher pub_dash = n.advertise<sensor_msgs::PointCloud2>("/output_dash", 1);
+	ros::Publisher pub2 = n.advertise<nav_msgs::OccupancyGrid>("/ob_map", 1);
+	ros::Publisher pub3 = n.advertise<nav_msgs::OccupancyGrid>("/local_map", 1);
+	ros::Publisher pub4 = n.advertise<nav_msgs::GridCells>("/obs_cell", 1);
+	
+	cloud2.header.frame_id = "/world";
+	cloud2_dash.header.frame_id = "/world";
+
+	obstacle_map.header.frame_id = "/map";
+	obstacle_map.data.resize(int(W / R) * int(H / R));
+	obstacle_map.info.width = int(W / R);
+	obstacle_map.info.height = int(H / R);
+	obstacle_map.info.resolution = R;
+	obstacle_map.info.origin.position.x = (min_x - W) / 2.0;
+	obstacle_map.info.origin.position.y = (min_y - H) / 2.0;
+	
+	obstacle_cell.header.frame_id = "/obstacle_cell";
+	obstacle_cell.cell_width = R;
+	obstacle_cell.cell_height = R;
+
+
+	local_map.header.frame_id = "/local_map";
+	local_map.data.resize(int(local_W / R * int(local_H / R)));
+	local_map.info.width = int(local_W / R);
+	local_map.info.height = int(local_H / R);
+	local_map.info.resolution = R;
+	local_map.info.origin.position.x = (min_x - local_W) / 2.0;
+	local_map.info.origin.position.y = (min_y - local_H) / 2.0;
+	
+
+	create_obstacle_map(temp_cloud, &obstacle_map);
+	expandObstacle(&obstacle_map);
+	
+	// create_local_map(local_x, local_y, local_theta, obstacle_map, local_map);
+	// expand_circle(int((W-min_x)/2.0/R), int((H-min_y)/2.0/R), int(0.3/R), &obstacle_map);
+	// tf::TransformBroadcaster br;
+	// geometry_msgs::Quaternion local_q = tf::createQuaternionMsgFromYaw(local_theta);
+	// geometry_msgs::TransformStamped  local_transform;
+	// local_transform.header.stamp = ros::time(0);
+	// local_transform.header.frame_id = "/map";
+	// local_transform.child_frame_id = "/local_map";
+	// local_transform.transform.translation.x = local_x;
+	// local_transform.transform.translation.y = local_y;
+	// local_transform.transform.translation.z = 0.0;
+	// local_transform.transform.rotation = local_q;
+	// br.sendTransform(local_transform);
+	
+	tf::TransformBroadcaster br;
+
+
+	
+	// create_local_map(local_x, local_y, local_theta, obstacle_map, local_map);
+	
+	ros::Rate loop_rate(10);
+	while(ros::ok()){
+		// viewer->spinOnce (100);
+		// boost::this_thread::sleep (boost::posix_time::microseconds (100000));
+		cloud2.header.stamp = ros::Time::now();
+		cloud2_dash.header.stamp = ros::Time::now();
+		obstacle_map.header.stamp = ros::Time::now();
+		local_map.header.stamp = ros::Time::now();
+		obstacle_cell.header.stamp = ros::Time::now();
+		// obstacle_map.header.frame_id = "/map";
+		// obstacle_map.data.resize(int(W/R) * int(H/R));
+		// obstacle_map.info.width = int(W/R);
+		// obstacle_map.info.height = int(H/R);
+		// obstacle_map.info.resolution = R;
+		// obstacle_map.info.origin.position.x = 0.0;
+		// obstacle_map.info.origin.position.y = 0.0;
+		
+		// create_obstacle_map(&cloud, &obstacle_map);
+		pub.publish(cloud2);
+		pub_dash.publish(cloud2_dash);
+		pub2.publish(obstacle_map);
+		pub3.publish(local_map);
+		pub4.publish(obstacle_cell);
+		loop_rate.sleep();
+	}
+
+
+	return 0;
+}
