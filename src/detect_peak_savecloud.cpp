@@ -1,4 +1,5 @@
 //入ってきたdataに対してpeakを計算する
+//savecloud では点群を貯めた状態でのpeakを計算する
 //
 //
 
@@ -98,7 +99,6 @@ void Calc_peak(CloudAPtr peak)
 					count++;
 					// if(count==20){
 					if(count==10){
-						// cout<<"peak!!!!!!!!!!!!!!!!!!!!!!!!"<<endl;
 						double tmp_i = i;
 						double fif_mean = 0;
 						while(tmp_i<devide){
@@ -122,9 +122,10 @@ void Calc_peak(CloudAPtr peak)
 									p.y = 0.0;
 									p.z = 0.0;
 									line_list.points.push_back(p);
-									p.x  = peak->points[(int)(i + (tmp_i - i)/2.0)].x;
-									p.y  = peak->points[(int)(i + (tmp_i - i)/2.0)].y;
-									p.z  = peak->points[(int)(i + (tmp_i - i)/2.0)].z;
+									int p_i = (int)(i + (tmp_i - i)/2.0);
+									p.x  = peak->points[p_i].x;
+									p.y  = peak->points[p_i].y;
+									p.z  = peak->points[p_i].z;
 									line_list.points.push_back(p);
 									// marker_pub.publish(line_list);
 									publish_flag = true;
@@ -148,9 +149,13 @@ void Calc_peak(CloudAPtr peak)
 									p.y = 0.0;
 									p.z = 0.0;
 									line_list.points.push_back(p);
-									p.x  = peak->points[(int)(i + (tmp_i - i)/2.0)].x;
-									p.y  = peak->points[(int)(i + (tmp_i - i)/2.0)].y;
-									p.z  = peak->points[(int)(i + (tmp_i - i)/2.0)].z;
+									int p_i = (int)(i + (tmp_i - i)/2.0);
+									// p.x  = peak->points[(int)(i + (tmp_i - i)/2.0)].x;
+									// p.y  = peak->points[(int)(i + (tmp_i - i)/2.0)].y;
+									// p.z  = peak->points[(int)(i + (tmp_i - i)/2.0)].z;
+									p.x  = peak->points[p_i].x;
+									p.y  = peak->points[p_i].y;
+									p.z  = peak->points[p_i].z;
 									line_list.points.push_back(p);
 									// marker_pub.publish(line_list);
 									publish_flag = true;

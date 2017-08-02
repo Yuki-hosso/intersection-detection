@@ -1,9 +1,9 @@
 /*
- * src: pcd_mover_sample.cpp
+ * velodyneの点群をGyro odometryに付加させ
+ * 数秒間貯める
  * 
- * lastupdate:'16.08.01
- * memo:
- *	pcdファイルを読み込み任意の値に並進回転移動させるsrc.
+ * 
+ * 
  *
 */
 
