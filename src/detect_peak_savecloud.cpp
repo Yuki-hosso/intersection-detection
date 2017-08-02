@@ -27,6 +27,10 @@
 #include <std_msgs/Int32MultiArray.h>
 #include <omp.h>
 
+#include <vector>
+#include <boost/range/algorithm.hpp>
+
+
 using namespace std;
 using namespace Eigen;
 
@@ -110,8 +114,8 @@ void Calc_peak(CloudAPtr peak)
 							// cout<<"五点平均"<<fif_mean<<endl;
 							if(fif_mean<=(threshold-3.0)){//detect end of load
 								fif_mean = 0.0;
-								cout<<"start:"<<i<<endl;
-								cout<<"end:"<<tmp_i<<endl;
+								// cout<<"start:"<<i<<endl;
+								// cout<<"end:"<<tmp_i<<endl;
 								// if(tmp_i - i>=20){
 								if(tmp_i - i>=10){
 									cout<<"its a load!!!!:"<<(double)i+(tmp_i-i)/2.0<<endl;
@@ -138,8 +142,8 @@ void Calc_peak(CloudAPtr peak)
 							fif_mean = 0.0;
 
 							if(tmp_i==devide){
-								cout<<"start:"<<i<<endl;
-								cout<<"end:"<<tmp_i<<endl;
+								// cout<<"start:"<<i<<endl;
+								// cout<<"end:"<<tmp_i<<endl;
 								if(tmp_i - i>=30){
 									cout<<"its a load!!!!:"<<(double)i+(tmp_i-i)/2.0<<endl;
 									set_deg.data.push_back( i + (int)((tmp_i-i)/2.0) );
@@ -181,12 +185,31 @@ void Calc_peak(CloudAPtr peak)
 		deg_pub.publish(set_deg);
 	}
 }
+void Calc_threshold(CloudAPtr shape_cloud,double& threshold)
+{
+	vector<double> v;
+	size_t shape_size = shape_cloud->points.size();
+	for(size_t i=0;i<shape_size;i++){
+		v.push_back(calc_distance(shape_cloud->points[i]));
+	}
+	boost::sort(v);
+
+	cout<<v[(size_t)shape_size*3/4]<<endl;
+	if(v[(size_t)shape_size*3/4]>15.0){
+		threshold = 1.7*v[(size_t)shape_size*3/4];
+	}else{
+		threshold = 25.0;
+	}
+
+}
 
 void Detect_peak(CloudAPtr shape_cloud)
 {
 	size_t cloud_size = shape_cloud->points.size();
 	size_t tmp_size = cloud_size + devide/18;
 
+	//閾値を四分位法から推定
+	Calc_threshold(shape_cloud,threshold);
 	double distance = 0.0;
 	CloudAPtr extend_shape(new CloudA);
 	//peak detectする前にデータの繰り返しを行いデータの不連続面に対してもpeak detectを行う
