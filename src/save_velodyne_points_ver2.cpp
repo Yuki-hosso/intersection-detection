@@ -41,7 +41,7 @@ double d_x=0.0, d_y=0.0, d_z=0.0;
 double angle_x_=0.0, angle_y_=0.0, angle_z_=0.0;
 int loop = 15;
 // int SAVE_SIZE = 10000;
-int SAVE_SIZE = 20000;
+int SAVE_SIZE = 18000;
 
 ros::Publisher shape_pub;
 
@@ -110,6 +110,14 @@ void cnv(CloudAPtr org, CloudAPtr rsl,
 	// cout<<"moved!!\n";
 }
 
+void Copy_cloud(CloudAPtr input,CloudAPtr output)
+{
+	size_t input_size = input->points.size();
+	for(size_t i=0;i<input_size;i++){
+		output->push_back(input->points[i]);
+	}
+}
+
 //callback
 CloudAPtr tmp_cloud (new CloudA);
 // void static_callback(const sensor_msgs::PointCloud2ConstPtr& msg)
@@ -169,7 +177,6 @@ int main (int argc, char** argv)
 	CloudAPtr save_cloud (new CloudA);
 	save_cloud->resize(SAVE_SIZE * loop);
 	int save_count = 0;
-	int max_cloud = 0;
 	ros::Rate loop_rate(20); // 20
 	// ros::Rate loop_rate(30); // 20
 	while (ros::ok()){
@@ -177,48 +184,29 @@ int main (int argc, char** argv)
 			// cout<<"in!!!!"<<endl;
 			odom_callback = false;
 			boost::mutex::scoped_lock(mutex_curv);
-			size_t curv_size = curv_cloud->points.size();
-			for(size_t i=0;i<curv_size;i++){
-				tmp_cloud->push_back(curv_cloud->points[i]);
-			}		
+			Copy_cloud(curv_cloud,tmp_cloud);
+			// size_t curv_size = curv_cloud->points.size();
+			// for(size_t i=0;i<curv_size;i++){
+			// 	tmp_cloud->push_back(curv_cloud->points[i]);
+			// }		
 			// cout<<"tmp1"<<tmp_cloud->points.size()<<endl;
 			boost::mutex::scoped_lock(mutex_minmax);
 		    //Downsample//
 		    pcl::VoxelGrid<pcl::PointXYZINormal> vg;  
 			CloudAPtr ds_cloud (new CloudA);  
 			vg.setInputCloud (minmax_cloud);  
-			// vg.setLeafSize (0.05f, 0.05f, 0.05f);
-			// vg.setLeafSize (0.07f, 0.07f, 0.07f);
-			vg.setLeafSize (0.10f, 0.10f, 0.10f);
+			// vg.setLeafSize (0.10f, 0.10f, 0.10f);
+			vg.setLeafSize (0.15f, 0.15f, 0.15f);
 			vg.filter (*ds_cloud);
-			size_t ds_size = ds_cloud->points.size();
-			for(size_t i=0;i<ds_size;i++){
-				tmp_cloud->push_back(ds_cloud->points[i]);
-			}
-			// cout<<"tmp2"<<tmp_cloud->points.size()<<endl;
-		    //Downsample//
-		    // pcl::VoxelGrid<pcl::PointXYZINormal> vg;  
-			// CloudAPtr ds_cloud (new CloudA);  
-			// vg.setInputCloud (tmp_cloud);  
-			// vg.setLeafSize (0.05f, 0.05f, 0.05f);
-			// // vg.setLeafSize (0.07f, 0.07f, 0.07f);
-			// // vg.setLeafSize (0.09f, 0.09f, 0.09f);
-			// vg.filter (*ds_cloud);
-			if(tmp_cloud->points.size()>15000){
-				if(max_cloud<tmp_cloud->points.size()){
-					cout<<"curv"<<curv_cloud->points.size()<<endl;
-					cout<<"minmax"<<ds_cloud->points.size()<<endl;
-					cout<<"down_sample"<<tmp_cloud->points.size()<<endl;
-					max_cloud = tmp_cloud->points.size();
-				}
-			}
+
+			Copy_cloud(ds_cloud,tmp_cloud);
+			// size_t ds_size = ds_cloud->points.size();
+			// for(size_t i=0;i<ds_size;i++){
+			// 	tmp_cloud->push_back(ds_cloud->points[i]);
+			// }
 			ds_cloud->points.clear();
 			minmax_cloud->points.clear();
 			curv_cloud->points.clear();
-			// cout<<"clear_points"<<tmp_cloud->points.size()<<endl;
-			// cout<<"clear!!!!"<<endl;
-			// cout<<"in!!!!"<<endl;
-			// if(0){
 			cnv(tmp_cloud, conv_cloud, d_x, d_y, d_z, angle_x_, angle_y_, angle_z_);
 			CloudA pub_cloud;
 			size_t cloud_size = conv_cloud->points.size();
@@ -250,7 +238,6 @@ int main (int argc, char** argv)
 			ros::Time time = ros::Time::now();
 			pubPointCloud2(shape_pub,pub_cloud,"/aaaa",time);
 			tmp_cloud->points.clear();
-			// }
 		}
         ros::spinOnce();
         loop_rate.sleep();
