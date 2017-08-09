@@ -177,27 +177,27 @@ void Intersection_detection(std_msgs::Int32MultiArray &peak,geometry_msgs::Pose 
 		}
 		if(tmp[1]>5||tmp[3]>5){
 			cout<<"intersection!!!!!!!!!!!!!!!!!!!!"<<endl;
-		cout<<tmp[0]<<endl;
-		cout<<tmp[1]<<endl;
-		cout<<tmp[2]<<endl;
-		cout<<tmp[3]<<endl;
-			INIT();
+			// cout<<tmp[0]<<endl;
+			// cout<<tmp[1]<<endl;
+			// cout<<tmp[2]<<endl;
+			// cout<<tmp[3]<<endl;
+			// INIT();
 		}
 		if(tmp[0]>5||tmp[2]>5){
 			cout<<"load!"<<endl;
-		cout<<tmp[0]<<endl;
-		cout<<tmp[1]<<endl;
-		cout<<tmp[2]<<endl;
-		cout<<tmp[3]<<endl;
+			// cout<<tmp[0]<<endl;
+			// cout<<tmp[1]<<endl;
+			// cout<<tmp[2]<<endl;
+			// cout<<tmp[3]<<endl;
 		}
 		insc_flag = false;
 	}else{
 			cout<<"nooooooooooooooooooooo"<<endl;
-		save_peak[(save_count%loop_count)*4] = 0;
-		save_peak[(save_count%loop_count)*4+1] = 0;
-		save_peak[(save_count%loop_count)*4+2] = 0;
-		save_peak[(save_count%loop_count)*4+3] = 0;
-			INIT();
+			save_peak[(save_count%loop_count)*4] = 0;
+			save_peak[(save_count%loop_count)*4+1] = 0;
+			save_peak[(save_count%loop_count)*4+2] = 0;
+			save_peak[(save_count%loop_count)*4+3] = 0;
+			// INIT();
 	}
 	save_count++;
 }
