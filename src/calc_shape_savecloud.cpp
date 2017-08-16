@@ -36,7 +36,8 @@ bool odom_callback = false;
 // int divide = 360;
 int divide = 720;
 const double PI = 3.141592;
-double remove_distance = 0.4;
+// double remove_distance = 0.1;
+double remove_distance = 0.05;
 
 ros::Publisher shape_pub;
 
@@ -173,25 +174,27 @@ void Calc_shape(CloudAPtr input_cloud,double& abs_x,double& abs_y,double& abs_ya
 	CloudAPtr shape_cloud(new CloudA);
 	shape_cloud->points.resize(divide);
 	double tmp_x=0,tmp_y=0;
-	#pragma omp parallel for
+	double sin_abs = sin(abs_yaw);
+	double cos_abs = cos(abs_yaw);
+	// #pragma omp parallel for
 	for(size_t i=0;i<cloud_size;i++){
 		// input_cloud->points[i].intensity = atan(input_cloud->points[i].y/input_cloud->points[i].x)/PI*180;
 		// input_cloud->points[i].intensity = atan2(input_cloud->points[i].y,input_cloud->points[i].x)/PI*180.0;
 		tmp_x = input_cloud->points[i].x - abs_x;
 		tmp_y = input_cloud->points[i].y - abs_y;
 		// input_cloud->points[i].intensity = atan2(input_cloud->points[i].y - abs_y ,input_cloud->points[i].x - abs_x )/PI*360.0;
-		input_cloud->points[i].intensity = atan2(- tmp_x*sin(abs_yaw) + tmp_y*cos(abs_yaw)  ,tmp_x*cos(abs_yaw) + tmp_y*sin(abs_yaw) )/PI*360.0;
-		// cout<<"save:"<<input_cloud->points[i].x<<endl;
-		// cout<<"abs:"<<abs_x<<endl;
-		// cout<<"deg:"<<(int)input_cloud->points[i].intensity<<endl;
+		// input_cloud->points[i].intensity = atan2(- tmp_x*sin(abs_yaw) + tmp_y*cos(abs_yaw)  ,tmp_x*cos(abs_yaw) + tmp_y*sin(abs_yaw) )/PI*360.0;
+		input_cloud->points[i].intensity = atan2(- tmp_x*sin_abs + tmp_y*cos_abs  ,tmp_x*cos_abs + tmp_y*sin_abs )/PI*360.0;
 	}
-	#pragma omp parallel for
+	// #pragma omp parallel for
 	for(size_t i=0;i<cloud_size;i++){
 		deg = (int)input_cloud->points[i].intensity + 359;
 		tmp_x = input_cloud->points[i].x - abs_x;
 		tmp_y = input_cloud->points[i].y - abs_y;
-		input_cloud->points[i].x = tmp_x*cos(abs_yaw) + tmp_y*sin(abs_yaw);
-		input_cloud->points[i].y = - tmp_x*sin(abs_yaw) + tmp_y*cos(abs_yaw);
+		// input_cloud->points[i].x = tmp_x*cos(abs_yaw) + tmp_y*sin(abs_yaw);
+		// input_cloud->points[i].y = - tmp_x*sin(abs_yaw) + tmp_y*cos(abs_yaw);
+		input_cloud->points[i].x = tmp_x*cos_abs + tmp_y*sin_abs;
+		input_cloud->points[i].y = - tmp_x*sin_abs + tmp_y*cos_abs;
 		
 		// cout<<deg<<endl;//for debag
 		if(shape_cloud->points[deg].intensity!=1.0){
@@ -203,12 +206,16 @@ void Calc_shape(CloudAPtr input_cloud,double& abs_x,double& abs_y,double& abs_ya
 			}
 		}
 	}
-	#pragma omp parallel for
+	// #pragma omp parallel for
 	for(int i=0;i<divide;i++){
-		if(calc_d(shape_cloud->points[i])==0.0){
+		if(i!=0&&calc_d(shape_cloud->points[i])==0.0){
 			// cout<<"ZERO!!!!"<<i<<endl;
-			shape_cloud->points[i].x = 40*sin((double)i/2.0/180.0*PI-PI/2.0);
-			shape_cloud->points[i].y = -40*cos((double)i/2.0/180.0*PI-PI/2.0);
+			if(calc_d(shape_cloud->points[i-1])>20.0){
+				shape_cloud->points[i].x = 40*sin((double)i/2.0/180.0*PI-PI/2.0);
+				shape_cloud->points[i].y = -40*cos((double)i/2.0/180.0*PI-PI/2.0);
+			}else{
+				Copy_point(shape_cloud->points[i-1],shape_cloud->points[i]);
+			}
 		}
 	}
 	// cout<<"fin!!!!"<<endl;

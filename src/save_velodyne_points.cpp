@@ -36,7 +36,8 @@ bool points_callback = false;
 double d_x=0.0, d_y=0.0, d_z=0.0;
 double angle_x_=0.0, angle_y_=0.0, angle_z_=0.0;
 int loop = 15;
-int SAVE_SIZE = 10000;
+// int SAVE_SIZE = 10000;
+int SAVE_SIZE = 15000;
 
 ros::Publisher shape_pub;
 

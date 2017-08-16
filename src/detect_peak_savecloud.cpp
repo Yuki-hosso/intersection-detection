@@ -40,7 +40,9 @@ typedef pcl::PointCloud<PointA>::Ptr CloudAPtr;
 
 bool callback_flag = false;
 int devide = 720;
-// double threshold = 15.0;
+//d-kan
+// double threshold = 7.0;
+// ikuta
 double threshold = 25.0;
 // double threshold = 27.0;
 // double threshold = 30.0;
@@ -113,6 +115,7 @@ void Calc_peak(CloudAPtr peak)
 							fif_mean = fif_mean/5.0;
 							// cout<<"五点平均"<<fif_mean<<endl;
 							if(fif_mean<=(threshold-3.0)){//detect end of load
+							// if(fif_mean<=(threshold-0.90)){//detect end of load
 								fif_mean = 0.0;
 								// cout<<"start:"<<i<<endl;
 								// cout<<"end:"<<tmp_i<<endl;
@@ -196,7 +199,8 @@ void Calc_threshold(CloudAPtr shape_cloud,double& threshold)
 
 	cout<<v[(size_t)shape_size*3/4]<<endl;
 	if(v[(size_t)shape_size*3/4]>15.0){
-		threshold = 1.7*v[(size_t)shape_size*3/4];
+		// threshold = 1.7*v[(size_t)shape_size*3/4];
+		threshold = 35.0;
 	}else{
 		threshold = 25.0;
 	}
