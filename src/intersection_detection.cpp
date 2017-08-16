@@ -20,6 +20,7 @@
 #include<std_msgs/Int32MultiArray.h>
 #include<geometry_msgs/Pose.h>
 #include <nav_msgs/Odometry.h>
+#include <std_msgs/Bool.h>
 
 using namespace std;
 using namespace Eigen;
@@ -31,6 +32,8 @@ typedef pcl::PointCloud<PointA>::Ptr CloudAPtr;
 typedef pcl::PointXYZI PointX;
 typedef pcl::PointCloud<PointX> CloudX;
 typedef pcl::PointCloud<PointX>::Ptr CloudXPtr;
+
+ros::Publisher flag_pub;
 
 bool callback_flag = false;
 bool screen_flag = false;
@@ -100,13 +103,26 @@ inline void INIT()
 	}
 }
 
+inline bool intersection_flag(geometry_msgs::Pose &odom,geometry_msgs::Pose &intersec_odom)
+{
+	double difference = abs( sqrt( pow(odom.position.x,2)+pow(odom.position.y,2) ) - sqrt( pow(intersec_odom.position.x,2)+pow(intersec_odom.position.y,2) )  );
+
+	if( sqrt( intersec_odom.position.x==0.0 &&  intersec_odom.position.y==0.0 )){
+		return true;
+	}
+	if(difference>5.0){
+		return true;
+	}else{
+		return false;
+	}
+}
 
 bool one_flag = false;
 bool two_flag = false;
 bool three_flag = false;
 bool four_flag = false;
 bool insc_flag = false;
-void Intersection_detection(std_msgs::Int32MultiArray &peak,geometry_msgs::Pose &odom)
+void Intersection_detection(std_msgs::Int32MultiArray &peak,geometry_msgs::Pose &odom,geometry_msgs::Pose &intersec_odom)
 {
 	for(int i=0;i<peak.layout.data_offset;i++){
 		if(peak.data[i]<30||peak.data[i]>690){
@@ -175,8 +191,15 @@ void Intersection_detection(std_msgs::Int32MultiArray &peak,geometry_msgs::Pose 
 				}
 			}
 		}
-		if(tmp[1]>5||tmp[3]>5){
+		if(tmp[1]>3||tmp[3]>3){
 			cout<<"intersection!!!!!!!!!!!!!!!!!!!!"<<endl;
+			intersec_odom.position.x = odom.position.x;
+			intersec_odom.position.y = odom.position.y;
+			intersec_odom.position.z = odom.position.z;
+			INIT();
+			std_msgs::Bool intersec;
+			intersec.data = true;
+			flag_pub.publish(intersec);
 			// cout<<tmp[0]<<endl;
 			// cout<<tmp[1]<<endl;
 			// cout<<tmp[2]<<endl;
@@ -241,6 +264,7 @@ int main (int argc, char** argv)
     ros::Subscriber sub = nh.subscribe ("/peak/deg2", 1, Peak_deg);
 	ros::Subscriber sub_lcl = n.subscribe("/lcl2",1,OdomCallback);
     // Create a ROS publisher for the output point cloud
+    flag_pub = nh.advertise<std_msgs::Bool> ("/intersection_flag", 1);
 
 	//init
 	// for(int i=0;i<loop_count*4;i++){
@@ -249,13 +273,16 @@ int main (int argc, char** argv)
 	INIT();
 	cout<<"init"<<endl;
 	//
+	geometry_msgs::Pose intersec_odom;
     // main handle
     ros::Rate loop_rate(20);
     while (ros::ok()){
 		if(callback_flag && odom_callback){
 			callback_flag = false;
 			odom_callback = false;
-			Intersection_detection(peak_in,odom);
+			if(intersection_flag(odom,intersec_odom)){
+				Intersection_detection(peak_in,odom,intersec_odom);
+			}
 		}
         ros::spinOnce();
         loop_rate.sleep();
