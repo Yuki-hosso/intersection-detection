@@ -237,8 +237,8 @@ void Calc_road(CloudAPtr peak)
 							}
 							fif_mean = fif_mean/5.0;
 							// cout<<"五点平均"<<fif_mean<<endl;
-							// if(fif_mean<=threshold){//detect end of load
-							if(fif_mean<=(threshold-1.0)){//detect end of load
+							if(fif_mean<=threshold){//detect end of load
+							// if(fif_mean<=(threshold-1.0)){//detect end of load
 								fif_mean = 0.0;
 								// cout<<"start:"<<i<<endl;
 								// cout<<"end:"<<tmp_i<<endl;
@@ -256,17 +256,17 @@ void Calc_road(CloudAPtr peak)
 										cnt++;
 									}
 									calc_result = (int)(road_deg/cnt);
-									// cout<<"cnt value"<<cnt<<endl;
+									cout<<"calc_result value:"<<calc_result<<endl;
 									geometry_msgs::Point p;
 									for(int iii = 1;iii<(cnt+1);iii++){
-										cout<<"its a road!!!!:"<<(double)i+(iii*calc_result)/2.0<<endl;
-										set_deg.data.push_back( i + (int)((iii*calc_result)/2.0) );
+										cout<<"its a road!!!!:"<<(double)i+(iii-1)*calc_result+(calc_result)/2.0<<endl;
+										set_deg.data.push_back( i + (int)((iii-1)*calc_result+(calc_result)/2.0) );
 										array_size++;
 										p.x = 0.0;
 										p.y = 0.0;
 										p.z = 0.0;
 										line_list.points.push_back(p);
-										int p_i = (int)(i + (iii*calc_result)/2.0);
+										int p_i = (int)(i + (iii-1)*calc_result +(calc_result)/2.0);
 										p.x  = peak->points[p_i].x;
 										p.y  = peak->points[p_i].y;
 										p.z  = peak->points[p_i].z;
@@ -293,6 +293,7 @@ void Calc_road(CloudAPtr peak)
 								}
 								i = tmp_i+5;
 								j = tmp_i+5;
+								cout<<"tmp_i:"<<tmp_i<<endl;
 								break;
 							}
 							tmp_i += 1;
@@ -318,14 +319,14 @@ void Calc_road(CloudAPtr peak)
 									geometry_msgs::Point p;
 									// cout<<"cnt value"<<cnt<<endl;
 									for(int iii = 1;iii<(cnt+1);iii++){
-										cout<<"its a road!!!!:"<<(double)i+(iii*calc_result)/2.0<<endl;
-										set_deg.data.push_back( i + (int)((iii*calc_result)/2.0) );
+										cout<<"its a road!!!!:"<<(double)i+(iii-1)*calc_result+(calc_result)/2.0<<endl;
+										set_deg.data.push_back( i + (int)((iii-1)*calc_result+(calc_result)/2.0) );
 										array_size++;
 										p.x = 0.0;
 										p.y = 0.0;
 										p.z = 0.0;
 										line_list.points.push_back(p);
-										int p_i = (int)(i + (iii*calc_result)/2.0);
+										int p_i = (int)(i + (iii-1)*calc_result + (calc_result)/2.0);
 										p.x  = peak->points[p_i].x;
 										p.y  = peak->points[p_i].y;
 										p.z  = peak->points[p_i].z;
