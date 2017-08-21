@@ -49,7 +49,9 @@ double threshold = 25.0;
 
 ros::Publisher peak_pub;
 ros::Publisher marker_pub;
+ros::Publisher marker2_pub;
 ros::Publisher deg_pub;
+ros::Publisher road_pub;
 
 //publish pointcloud
 inline void pubPointCloud2(ros::Publisher& pub, 
@@ -121,7 +123,7 @@ void Calc_peak(CloudAPtr peak)
 								// cout<<"end:"<<tmp_i<<endl;
 								// if(tmp_i - i>=20){
 								if(tmp_i - i>=10){
-									cout<<"its a load!!!!:"<<(double)i+(tmp_i-i)/2.0<<endl;
+									cout<<"its a road!!!!:"<<(double)i+(tmp_i-i)/2.0<<endl;
 									set_deg.data.push_back( i + (int)((tmp_i-i)/2.0) );
 									array_size++;
 									geometry_msgs::Point p;
@@ -147,8 +149,9 @@ void Calc_peak(CloudAPtr peak)
 							if(tmp_i==devide){
 								// cout<<"start:"<<i<<endl;
 								// cout<<"end:"<<tmp_i<<endl;
-								if(tmp_i - i>=30){
-									cout<<"its a load!!!!:"<<(double)i+(tmp_i-i)/2.0<<endl;
+								// if(tmp_i - i>=30){
+								if(tmp_i - i>=10){
+									cout<<"its a road!!!!:"<<(double)i+(tmp_i-i)/2.0<<endl;
 									set_deg.data.push_back( i + (int)((tmp_i-i)/2.0) );
 									array_size++;
 									geometry_msgs::Point p;
@@ -188,6 +191,184 @@ void Calc_peak(CloudAPtr peak)
 		deg_pub.publish(set_deg);
 	}
 }
+void Calc_road(CloudAPtr peak)
+{
+	std_msgs::Int32MultiArray set_deg;
+	set_deg.data.clear();
+	int array_size = 0;
+
+	size_t cloud_size = peak->points.size()-devide/18;
+	size_t certification = 40;
+	int count = 0;
+	bool publish_flag = false;
+
+
+	visualization_msgs::Marker line_list;
+	line_list.header.frame_id = "/velodyne";
+	line_list.header.stamp = ros::Time::now();
+	line_list.ns = "points_and_lines";
+ 	line_list.action = visualization_msgs::Marker::ADD;
+	line_list.pose.orientation.w = 1.0;
+	line_list.id = 0;
+	line_list.type = visualization_msgs::Marker::LINE_LIST;
+	line_list.scale.x = 0.1;
+	line_list.color.r = 0.5;
+ 	line_list.color.a = 0.5;
+
+	for(size_t i=0;i<cloud_size;i++){
+		if(peak->points[i].intensity >=threshold){
+			count=0;
+			size_t tmp_j = i;
+			for(size_t j = tmp_j;j<tmp_j+certification;j++){
+				if(peak->points[j].intensity >=threshold){
+					count++;
+					// if(count==20){
+					if(count==10){
+						size_t tmp_i = i;
+						double fif_mean = 0;
+						while(tmp_i<devide){
+							//五点平均が閾値に近い部分を一つのピークとする
+							for(size_t k=tmp_i;k<tmp_i+5;k++){
+								fif_mean += peak->points[k].intensity;
+							}
+							fif_mean = fif_mean/5.0;
+							// cout<<"五点平均"<<fif_mean<<endl;
+							if(fif_mean<=threshold){//detect end of load
+								fif_mean = 0.0;
+								// cout<<"start:"<<i<<endl;
+								// cout<<"end:"<<tmp_i<<endl;
+								int road_deg = tmp_i - i;
+								// cout<<road_deg<<endl;
+								// cout<<tmp_i<<endl;
+								// cout<<i<<endl;
+								if(road_deg>=60){
+									cout<<"road_deg over 60"<<endl;
+									cout<<road_deg<<endl;
+									int cnt = 0;
+									int calc_result = road_deg;
+									while(calc_result>=60){
+										calc_result -= 60;
+										cnt++;
+									}
+									calc_result = (int)(road_deg/cnt);
+									cout<<"cnt value"<<cnt<<endl;
+									geometry_msgs::Point p;
+									for(int iii = 1;iii<(cnt+1);iii++){
+										cout<<"its a road!!!!:"<<(double)i+(iii*calc_result)/2.0<<endl;
+										set_deg.data.push_back( i + (int)((iii*calc_result)/2.0) );
+										array_size++;
+										p.x = 0.0;
+										p.y = 0.0;
+										p.z = 0.0;
+										line_list.points.push_back(p);
+										int p_i = (int)(i + (iii*calc_result)/2.0);
+										p.x  = peak->points[p_i].x;
+										p.y  = peak->points[p_i].y;
+										p.z  = peak->points[p_i].z;
+										line_list.points.push_back(p);
+										// marker_pub.publish(line_list);
+										publish_flag = true;
+									}
+								}else if(road_deg>=10){
+									cout<<"its a road!!!!:"<<(double)i+(road_deg)/2.0<<endl;
+									set_deg.data.push_back( i + (int)((road_deg)/2.0) );
+									array_size++;
+									geometry_msgs::Point p;
+									p.x = 0.0;
+									p.y = 0.0;
+									p.z = 0.0;
+									line_list.points.push_back(p);
+									int p_i = (int)(i + (road_deg)/2.0);
+									p.x  = peak->points[p_i].x;
+									p.y  = peak->points[p_i].y;
+									p.z  = peak->points[p_i].z;
+									line_list.points.push_back(p);
+									// marker_pub.publish(line_list);
+									publish_flag = true;
+								}
+								i = tmp_i+5;
+								j = tmp_i+5;
+								// break;
+							}
+							tmp_i += 1;
+							fif_mean = 0.0;
+
+							if(tmp_i==devide){
+								// cout<<"start:"<<i<<endl;
+								// cout<<"end:"<<tmp_i<<endl;
+								int road_deg = tmp_i - i;
+								// cout<<road_deg<<endl;
+								// cout<<tmp_i<<endl;
+								// cout<<i<<endl;
+								if(road_deg>=60){
+									cout<<"road_deg over 60"<<endl;
+									cout<<road_deg<<endl;
+									int cnt = 0;
+									int calc_result = road_deg;
+									while(calc_result>=60){
+										calc_result -= 60;
+										cnt++;
+									}
+									calc_result = (int)(road_deg/cnt);
+									geometry_msgs::Point p;
+									cout<<"cnt value"<<cnt<<endl;
+									for(int iii = 1;iii<(cnt+1);iii++){
+										cout<<"its a road!!!!:"<<(double)i+(iii*calc_result)/2.0<<endl;
+										set_deg.data.push_back( i + (int)((iii*calc_result)/2.0) );
+										array_size++;
+										p.x = 0.0;
+										p.y = 0.0;
+										p.z = 0.0;
+										line_list.points.push_back(p);
+										int p_i = (int)(i + (iii*calc_result)/2.0);
+										p.x  = peak->points[p_i].x;
+										p.y  = peak->points[p_i].y;
+										p.z  = peak->points[p_i].z;
+										line_list.points.push_back(p);
+										// marker_pub.publish(line_list);
+										publish_flag = true;
+									}
+								}else if(road_deg>=10){
+									cout<<"its a road!!!!:"<<(double)i+(road_deg)/2.0<<endl;
+									set_deg.data.push_back( i + (int)((road_deg)/2.0) );
+									array_size++;
+									geometry_msgs::Point p;
+									p.x = 0.0;
+									p.y = 0.0;
+									p.z = 0.0;
+									line_list.points.push_back(p);
+									int p_i = (int)(i + (road_deg)/2.0);
+									// p.x  = peak->points[(int)(i + (tmp_i - i)/2.0)].x;
+									// p.y  = peak->points[(int)(i + (tmp_i - i)/2.0)].y;
+									// p.z  = peak->points[(int)(i + (tmp_i - i)/2.0)].z;
+									p.x  = peak->points[p_i].x;
+									p.y  = peak->points[p_i].y;
+									p.z  = peak->points[p_i].z;
+									line_list.points.push_back(p);
+									// marker_pub.publish(line_list);
+									publish_flag = true;
+								}
+								i= tmp_i;
+								j= tmp_i;
+								// break;
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+	//publish vizualize&load_deg
+	if(publish_flag){
+		set_deg.layout.data_offset = array_size;
+		marker2_pub.publish(line_list);
+		road_pub.publish(set_deg);
+	}else{
+		set_deg.layout.data_offset = 100;
+		set_deg.data.push_back(0);
+		road_pub.publish(set_deg);
+	}
+}
 void Calc_threshold(CloudAPtr shape_cloud,double& threshold)
 {
 	vector<double> v;
@@ -201,8 +382,10 @@ void Calc_threshold(CloudAPtr shape_cloud,double& threshold)
 	if(v[(size_t)shape_size*3/4]>15.0){
 		// threshold = 1.7*v[(size_t)shape_size*3/4];
 		threshold = 35.0;
-	}else{
+	}else if(v[(size_t)shape_size*3/4]>7.0){
 		threshold = 25.0;
+	}else{
+		threshold = 15.0;
 	}
 
 }
@@ -222,6 +405,7 @@ void Detect_peak(CloudAPtr shape_cloud)
 		extend_shape->push_back(shape_cloud->points[i%cloud_size]);
 		distance = calc_distance(extend_shape->points[i]);
 		if(distance > threshold+3.0){
+			// A
 			// extend_shape->points[i].intensity = threshold;
 			extend_shape->points[i].intensity = threshold+3.0;
 		}else{
@@ -230,6 +414,9 @@ void Detect_peak(CloudAPtr shape_cloud)
 	}
 	//Peak を検出する
 	Calc_peak(extend_shape);
+	//road を検出
+	threshold = 10.0;
+	Calc_road(extend_shape);
 
 }
 
@@ -254,8 +441,10 @@ int main (int argc, char** argv)
     ros::Subscriber sub = nh.subscribe ("/detect_shape2", 1, Shape_callback);
     // Create a ROS publisher for the output point cloud
     peak_pub = nh.advertise<sensor_msgs::PointCloud2> ("/detect_peak2", 1);
-	marker_pub = n.advertise<visualization_msgs::Marker>("visualization_marker2", 10);
+	marker_pub = n.advertise<visualization_msgs::Marker>("visualization_marker/long", 10);
+	marker2_pub = n.advertise<visualization_msgs::Marker>("visualization_marker/short", 10);
 	deg_pub = n.advertise<std_msgs::Int32MultiArray>("/peak/deg2", 10);
+	road_pub = n.advertise<std_msgs::Int32MultiArray>("/road/deg2", 10);
     // main handle
     ros::Rate loop_rate(20);
     while (ros::ok()){
