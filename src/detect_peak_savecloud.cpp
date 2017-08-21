@@ -76,6 +76,7 @@ inline double calc_distance(PointA& input)
 
 void Calc_peak(CloudAPtr peak)
 {
+	cout<<"peak_detection"<<endl;
 	std_msgs::Int32MultiArray set_deg;
 	set_deg.data.clear();
 	int array_size = 0;
@@ -193,6 +194,8 @@ void Calc_peak(CloudAPtr peak)
 }
 void Calc_road(CloudAPtr peak)
 {
+	cout<<"road_detection"<<endl;
+
 	std_msgs::Int32MultiArray set_deg;
 	set_deg.data.clear();
 	int array_size = 0;
@@ -212,8 +215,9 @@ void Calc_road(CloudAPtr peak)
 	line_list.id = 0;
 	line_list.type = visualization_msgs::Marker::LINE_LIST;
 	line_list.scale.x = 0.1;
-	line_list.color.r = 0.5;
- 	line_list.color.a = 0.5;
+	// line_list.color.r = 0.5;
+	line_list.color.g = 1.0;
+ 	line_list.color.a = 1.0;
 
 	for(size_t i=0;i<cloud_size;i++){
 		if(peak->points[i].intensity >=threshold){
@@ -233,7 +237,8 @@ void Calc_road(CloudAPtr peak)
 							}
 							fif_mean = fif_mean/5.0;
 							// cout<<"五点平均"<<fif_mean<<endl;
-							if(fif_mean<=threshold){//detect end of load
+							// if(fif_mean<=threshold){//detect end of load
+							if(fif_mean<=(threshold-1.0)){//detect end of load
 								fif_mean = 0.0;
 								// cout<<"start:"<<i<<endl;
 								// cout<<"end:"<<tmp_i<<endl;
@@ -251,7 +256,7 @@ void Calc_road(CloudAPtr peak)
 										cnt++;
 									}
 									calc_result = (int)(road_deg/cnt);
-									cout<<"cnt value"<<cnt<<endl;
+									// cout<<"cnt value"<<cnt<<endl;
 									geometry_msgs::Point p;
 									for(int iii = 1;iii<(cnt+1);iii++){
 										cout<<"its a road!!!!:"<<(double)i+(iii*calc_result)/2.0<<endl;
@@ -288,7 +293,7 @@ void Calc_road(CloudAPtr peak)
 								}
 								i = tmp_i+5;
 								j = tmp_i+5;
-								// break;
+								break;
 							}
 							tmp_i += 1;
 							fif_mean = 0.0;
@@ -311,7 +316,7 @@ void Calc_road(CloudAPtr peak)
 									}
 									calc_result = (int)(road_deg/cnt);
 									geometry_msgs::Point p;
-									cout<<"cnt value"<<cnt<<endl;
+									// cout<<"cnt value"<<cnt<<endl;
 									for(int iii = 1;iii<(cnt+1);iii++){
 										cout<<"its a road!!!!:"<<(double)i+(iii*calc_result)/2.0<<endl;
 										set_deg.data.push_back( i + (int)((iii*calc_result)/2.0) );
@@ -443,8 +448,8 @@ int main (int argc, char** argv)
     peak_pub = nh.advertise<sensor_msgs::PointCloud2> ("/detect_peak2", 1);
 	marker_pub = n.advertise<visualization_msgs::Marker>("visualization_marker/long", 10);
 	marker2_pub = n.advertise<visualization_msgs::Marker>("visualization_marker/short", 10);
-	deg_pub = n.advertise<std_msgs::Int32MultiArray>("/peak/deg2", 10);
-	road_pub = n.advertise<std_msgs::Int32MultiArray>("/road/deg2", 10);
+	deg_pub = n.advertise<std_msgs::Int32MultiArray>("/peak/deg", 10);
+	road_pub = n.advertise<std_msgs::Int32MultiArray>("/road/deg", 10);
     // main handle
     ros::Rate loop_rate(20);
     while (ros::ok()){
