@@ -246,13 +246,13 @@ void Calc_road(CloudAPtr peak)
 								// cout<<road_deg<<endl;
 								// cout<<tmp_i<<endl;
 								// cout<<i<<endl;
-								if(road_deg>=60){
-									cout<<"road_deg over 60"<<endl;
+								if(road_deg>=10){
+									cout<<"road_deg over 10"<<endl;
 									cout<<road_deg<<endl;
 									int cnt = 0;
 									int calc_result = road_deg;
-									while(calc_result>=60){
-										calc_result -= 60;
+									while(calc_result>=5){
+										calc_result -= 5;
 										cnt++;
 									}
 									calc_result = (int)(road_deg/cnt);
@@ -274,7 +274,7 @@ void Calc_road(CloudAPtr peak)
 										// marker_pub.publish(line_list);
 										publish_flag = true;
 									}
-								}else if(road_deg>=10){
+								}else if(road_deg>=1000){
 									cout<<"its a road!!!!:"<<(double)i+(road_deg)/2.0<<endl;
 									set_deg.data.push_back( i + (int)((road_deg)/2.0) );
 									array_size++;
@@ -306,13 +306,13 @@ void Calc_road(CloudAPtr peak)
 								// cout<<road_deg<<endl;
 								// cout<<tmp_i<<endl;
 								// cout<<i<<endl;
-								if(road_deg>=60){
-									cout<<"road_deg over 60"<<endl;
+								if(road_deg>=10){
+									cout<<"road_deg over 10"<<endl;
 									cout<<road_deg<<endl;
 									int cnt = 0;
 									int calc_result = road_deg;
-									while(calc_result>=60){
-										calc_result -= 60;
+									while(calc_result>=5){
+										calc_result -= 5;
 										cnt++;
 									}
 									calc_result = (int)(road_deg/cnt);
@@ -334,7 +334,7 @@ void Calc_road(CloudAPtr peak)
 										// marker_pub.publish(line_list);
 										publish_flag = true;
 									}
-								}else if(road_deg>=10){
+								}else if(road_deg>=1000){
 									cout<<"its a road!!!!:"<<(double)i+(road_deg)/2.0<<endl;
 									set_deg.data.push_back( i + (int)((road_deg)/2.0) );
 									array_size++;
