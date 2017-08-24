@@ -207,7 +207,7 @@ void Intersection_detection(std_msgs::Int32MultiArray &peak,geometry_msgs::Pose 
 			// INIT();
 		}
 		if(tmp[0]>5||tmp[2]>5){
-			cout<<"load!"<<endl;
+			cout<<"road!"<<endl;
 			// cout<<tmp[0]<<endl;
 			// cout<<tmp[1]<<endl;
 			// cout<<tmp[2]<<endl;
@@ -260,9 +260,9 @@ int main (int argc, char** argv)
 
     // Create a ROS subscriber for the input point cloud
     // ros::Subscriber sub = nh.subscribe ("/velodyne_points", 1, velodyne_cb);
-    // ros::Subscriber sub = nh.subscribe ("/peak/deg", 1, Peak_deg);
-    ros::Subscriber sub = nh.subscribe ("/peak/deg2", 1, Peak_deg);
-	ros::Subscriber sub_lcl = n.subscribe("/lcl2",1,OdomCallback);
+    ros::Subscriber sub = nh.subscribe ("/peak/deg", 1, Peak_deg);
+    // ros::Subscriber sub = nh.subscribe ("/peak/deg2", 1, Peak_deg);
+	ros::Subscriber sub_lcl = n.subscribe("/lcl",1,OdomCallback);
     // Create a ROS publisher for the output point cloud
     flag_pub = nh.advertise<std_msgs::Bool> ("/intersection_flag", 1);
 

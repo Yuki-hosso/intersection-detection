@@ -88,7 +88,7 @@ inline bool Calc_distance(PointA& orig,PointA& min)
 	}
 }
 
-inline double calc_d(PointA& input)
+double calc_d(PointA& input)
 {
 	double distance = sqrt(input.x*input.x + input.y*input.y);
 
@@ -208,14 +208,10 @@ void Calc_shape(CloudAPtr input_cloud,double& abs_x,double& abs_y,double& abs_ya
 	}
 	// #pragma omp parallel for
 	for(int i=0;i<divide;i++){
-		if(i!=0&&calc_d(shape_cloud->points[i])==0.0){
+		if(calc_d(shape_cloud->points[i])==0.0){
 			// cout<<"ZERO!!!!"<<i<<endl;
-			if(calc_d(shape_cloud->points[i-1])>20.0){
-				shape_cloud->points[i].x = 40*sin((double)i/2.0/180.0*PI-PI/2.0);
-				shape_cloud->points[i].y = -40*cos((double)i/2.0/180.0*PI-PI/2.0);
-			}else{
-				Copy_point(shape_cloud->points[i-1],shape_cloud->points[i]);
-			}
+			shape_cloud->points[i].x = 40*sin((double)i/2.0/180.0*PI-PI/2.0);
+			shape_cloud->points[i].y = -40*cos((double)i/2.0/180.0*PI-PI/2.0);
 		}
 	}
 	// cout<<"fin!!!!"<<endl;
@@ -274,7 +270,7 @@ int main (int argc, char** argv)
     // ros::Subscriber sub = nh.subscribe ("/velodyne_points", 1, velodyne_cb);
     // ros::Subscriber sub = nh.subscribe ("/local_cloud", 1, static_callback);
     ros::Subscriber sub = nh.subscribe ("/save_cloud", 1, static_callback);
-	ros::Subscriber sub_lcl = n.subscribe("/lcl",1,OdomCallback);
+	ros::Subscriber sub_lcl = n.subscribe("/lcl2",1,OdomCallback);
     // Create a ROS publisher for the output point cloud
     shape_pub = nh.advertise<sensor_msgs::PointCloud2> ("/detect_shape2", 1);
     // main handle

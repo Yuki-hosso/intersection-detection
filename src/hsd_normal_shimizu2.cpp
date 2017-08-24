@@ -39,7 +39,7 @@ double height_cut = 0.5;
 ros::Publisher gauss_pub;
 ros::Publisher curv_pub;
 
-//  output {{{
+//  output 
 inline void pubPointCloud2 (ros::Publisher& pub, 
                             const CloudA& cloud,
                             const char* frame_id,
@@ -51,7 +51,7 @@ inline void pubPointCloud2 (ros::Publisher& pub,
     output.header.stamp = time;
     pub.publish (output);
 }
-//}}}
+//
 
 inline void Copy_cloud(PointA& point_in,
 					   PointA& point_out)
@@ -80,7 +80,8 @@ inline void Visualize(CloudAPtr cloud)
 {
 	size_t cloud_size = cloud->points.size();
 	size_t count = 0;
-	double para = 0.985;
+	// double para = 0.985;
+	double para = 0.94;
 	// double para = 0.90;
 	for(size_t i=0;i<cloud_size;i++){
         // if (fabs(cloud->points[i].normal_z) >  para){
@@ -159,12 +160,15 @@ inline void Visualize_curv(CloudAPtr cloud)
 	size_t cloud_size = cloud->points.size();
 	size_t count = 0;
 	// double para = 0.10;
-	double para = 0.17;
+	// double para = 0.17;
 	// double para = 0.20;
+	double para = 0.25;
 	// double para = 0.80;
 	for(size_t i=0;i<cloud_size;i++){
         if (fabs(cloud->points[i].curvature) >  para){
+			if(cloud->points[i].z<height_cut){
 				count++;
+			}
 		}
 	}
 
@@ -173,11 +177,13 @@ inline void Visualize_curv(CloudAPtr cloud)
 	int output = 0;
 	for(size_t i=0;i<cloud_size;i++){
         if (fabs(cloud->points[i].curvature) >  para){
+			if(cloud->points[i].z<height_cut){
 				Copy_cloud(cloud->points[i],output_cloud.points[output]);
 				// cout<<cloud->points[i].x<<endl;
 				// cout<<output_cloud->points[output].normal_z<<endl;
 				// cout<<"aa"<<endl;
 				output++;
+			}
 		}
 	}
     // output
@@ -185,7 +191,7 @@ inline void Visualize_curv(CloudAPtr cloud)
     pubPointCloud2 (curv_pub, output_cloud, "/curvature_cloud", time);
 }
 
-// Downsample {{{
+// Downsample 
 inline void Downsample (CloudXPtr input_cloud, 
                         CloudXPtr downsampled,
                         float size)
@@ -194,7 +200,7 @@ inline void Downsample (CloudXPtr input_cloud,
     sor.setInputCloud (input_cloud);
     sor.setLeafSize (size, size, size);
     sor.filter (*downsampled);
-}//}}}
+}//
 
 
 //callback

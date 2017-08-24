@@ -155,24 +155,18 @@ SET(CMAKE_CXX_FLAGS "-std=c++11 -O2 -g -Wall ${CMAKE_CXX_FLAGS}")
 # add_dependencies(my_pcl_tutorial ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
 ## Declare a C++ executable
-# add_executable(my_pcl_tutorial_node src/my_pcl_tutorial_node.cpp)
-#add_executable(global_obstacle_map_creater src/global_obstacle_map_creater.cpp)
-#add_executable(global_obstacle_map_creater_before_crcl src/global_obstacle_map_creater_before_crcl.cpp)
-#add_executable(global_obstacle_map_creater_before_crcl_for_3d_ndt src/global_obstacle_map_creater_before_crcl_for_3d_ndt.cpp)
-#add_executable(global_obstacle_map_creater_after_crcl src/global_obstacle_map_creater_after_crcl.cpp)
-#add_executable(global_obstacle_map_creater_after_crcl_for_ndt src/global_obstacle_map_creater_after_crcl_for_ndt.cpp)
-# add_executable(global_obstacle_map_creater_after_crcl_for_3d_ndt src/global_obstacle_map_creater_after_crcl_for_3d_ndt.cpp)
-#add_executable(global_obstacle_map_creater_tsukuba src/global_obstacle_map_creater_tsukuba.cpp)
 # add_executable(hosoda_gauss src/hosoda_gauss.cpp)
 # add_executable(hsd_gauss src/hsd_gauss.cpp)
 # add_executable(hsd_normal_shimizu src/hsd_normal_shimizu.cpp)
 add_executable(hsd_normal_shimizu2 src/hsd_normal_shimizu2.cpp)
 # add_executable(hsd_normal_x src/hsd_normal_x.cpp)
-add_executable(region_growing_segmentation src/region_growing_segmentation.cpp)
+# add_executable(region_growing_segmentation src/region_growing_segmentation.cpp)
 # add_executable(otamesi src/otamesi.cpp)
-add_executable(calc_shape src/calc_shape.cpp)
+# add_executable(calc_shape src/calc_shape.cpp)
 add_executable(calc_shape_savecloud src/calc_shape_savecloud.cpp)
 add_executable(save_velodyne_points src/save_velodyne_points.cpp)
+add_executable(save_velodyne_points_ver2 src/save_velodyne_points_ver2.cpp)
+add_executable(save_velodyne_points_odometry src/save_velodyne_points_odometry.cpp)
 # add_executable(remove_cluster src/remove_cluster.cpp)
 add_executable(rwrc14_remove_cluster_for_3dmap src/rwrc14_remove_cluster_for_3dmap.cpp)
 add_executable(rwrc14_remove_cluster_for_3dmap_filter src/rwrc14_remove_cluster_for_3dmap_filter.cpp)
@@ -186,54 +180,11 @@ add_executable(intersection_detection src/intersection_detection.cpp)
 add_executable(filter3 src/filter3.cpp)
 add_executable(ransac_example src/ransac_example.cpp)
 #
-#add_executable(example_ndt src/example_ndt.cpp)
-#add_executable(example_fast_ndt src/example_fast_ndt.cpp)
-#add_executable(example_fast_3d_ndt_ver2 src/example_fast_3d_ndt_ver2.cpp)
-#add_executable(example_voxel_grid src/example_voxel_grid.cpp)
-#add_executable(example_pcd src/example_pcd.cpp)
 #
-#add_executable(example src/example.cpp)
-#add_executable(example1 src/example1.cpp)
-#add_executable(example2 src/example2.cpp)
-#add_executable(example3 src/example3.cpp)
-#add_executable(example4 src/example4.cpp)
-#add_executable(example5 src/example5.cpp)
-#add_executable(example6 src/example6.cpp)
-#add_executable(example7 src/example7.cpp)
-#add_executable(example8 src/example8.cpp)
-#add_executable(example9 src/example9.cpp)
-#add_executable(example10 src/example10.cpp)
-#add_executable(example11 src/example11.cpp)
-# add_executable(example11_ver2 src/example11_ver2.cpp)
-#add_executable(example11_with_tom_laser src/example11_with_tom_laser.cpp)
-#add_executable(example12 src/example12.cpp)
-#add_executable(example12_fast_ndt src/example12_fast_ndt.cpp)
-#add_executable(example12_fast_ndt_ver2 src/example12_fast_ndt_ver2.cpp)
-# add_executable(example12_fast_3d_ndt src/example12_fast_3d_ndt.cpp)
-#add_executable(example12_fast_3d_ndt_for_vis src/example12_fast_3d_ndt_for_vis.cpp)
-#add_executable(test1 src/test1.cpp)
-#add_executable(sample_pub_odom src/sample_pub_odom.cpp)
-#add_executable(sample_pub_odom2 src/sample_pub_odom2.cpp)
-#add_executable(sample_pub_wp_mode src/sample_pub_wp_mode.cpp)
-#add_executable(sample_pub_local_goal src/sample_pub_local_goal.cpp)
 #
 #add_executable(Dgauss_score src/Dgauss_score.cpp)
 #add_executable(NDT_score src/NDT_score.cpp)
 #
-#add_executable(infant_height_map_220 src/infant_height_map_220.cpp)
-#add_executable(infant_height_map_221 src/infant_height_map_221.cpp)
-#add_executable(infant_height_map_222 src/infant_height_map_222.cpp)
-
-# add_executable(infant_curvature_220 src/infant_curvature_220.cpp)
-# add_executable(infant_curvature_221 src/infant_curvature_221.cpp)
-# add_executable(infant_curvature_222 src/infant_curvature_222.cpp)
-#add_executable(infant_curvature_220_new src/infant_curvature_220_new.cpp)
-#add_executable(infant_curvature_221_new src/infant_curvature_221_new.cpp)
-#add_executable(infant_curvature_222_new src/infant_curvature_222_new.cpp)
-#
-#add_executable(vis_tom_laser src/vis_tom_laser.cpp)
-#
-#add_executable(create_tom_laser_local_map src/create_tom_laser_local_map.cpp)
 
 ## Add cmake target dependencies of the executable
 ## same as for the library above
@@ -243,35 +194,6 @@ add_executable(ransac_example src/ransac_example.cpp)
 # target_link_libraries(my_pcl_tutorial_node
   # ${catkin_LIBRARIES}
 # )
-#target_link_libraries(global_obstacle_map_creater
-#  ${catkin_LIBRARIES}
-#  ${PCL_LIBRARIES}
-#)
-#target_link_libraries(global_obstacle_map_creater_before_crcl
-#  ${catkin_LIBRARIES}
-#  ${PCL_LIBRARIES}
-#)
-#target_link_libraries(global_obstacle_map_creater_before_crcl_for_3d_ndt
-#  ${catkin_LIBRARIES}
-#  ${PCL_LIBRARIES}
-#)
-#target_link_libraries(global_obstacle_map_creater_after_crcl
-#  ${catkin_LIBRARIES}
-#  ${PCL_LIBRARIES}
-#)
-#target_link_libraries(global_obstacle_map_creater_after_crcl_for_ndt
-#  ${catkin_LIBRARIES}
-#  ${PCL_LIBRARIES}
-#)
-# target_link_libraries(global_obstacle_map_creater_after_crcl_for_3d_ndt
-#   ${catkin_LIBRARIES}
-#   ${PCL_LIBRARIES}
-# )
-#target_link_libraries(global_obstacle_map_creater_tsukuba
-#  ${catkin_LIBRARIES}
-#  ${PCL_LIBRARIES}
-#)
-#
 #target_link_libraries(example_ndt
 #  ${catkin_LIBRARIES}
 #  ${PCL_LIBRARIES}
@@ -288,47 +210,7 @@ add_executable(ransac_example src/ransac_example.cpp)
 #  ${catkin_LIBRARIES}
 #  ${PCL_LIBRARIES}
 #)
-#target_link_libraries(example_pcd
-#  ${catkin_LIBRARIES}
-#  ${PCL_LIBRARIES}
-#)
 #
-#target_link_libraries(example
-#  ${catkin_LIBRARIES}
-#  ${PCL_LIBRARIES}
-#)
-#target_link_libraries(example1
-#  ${catkin_LIBRARIES}
-#  ${PCL_LIBRARIES}
-#)
-#target_link_libraries(example2
-#  ${catkin_LIBRARIES}
-#  ${PCL_LIBRARIES}
-#)
-#target_link_libraries(example3
-#  ${catkin_LIBRARIES}
-#  ${PCL_LIBRARIES}
-#)
-#target_link_libraries(example4
-#  ${catkin_LIBRARIES}
-#  ${PCL_LIBRARIES}
-#)
-#target_link_libraries(example5
-#  ${catkin_LIBRARIES}
-#  ${PCL_LIBRARIES}
-#)
-#target_link_libraries(example6
-#  ${catkin_LIBRARIES}
-#  ${PCL_LIBRARIES}
-#)
-# target_link_libraries(hosoda_gauss
-#  ${catkin_LIBRARIES}
-#  ${PCL_LIBRARIES}
-# )
-# target_link_libraries(hsd_gauss
-#  ${catkin_LIBRARIES}
-#  ${PCL_LIBRARIES}
-# )
 # target_link_libraries(hsd_normal_shimizu
 #  ${catkin_LIBRARIES}
 #  ${PCL_LIBRARIES}
@@ -337,27 +219,31 @@ target_link_libraries(hsd_normal_shimizu2
  ${catkin_LIBRARIES}
  ${PCL_LIBRARIES}
 )
-# target_link_libraries(hsd_normal_x
+# target_link_libraries(region_growing_segmentation
 #  ${catkin_LIBRARIES}
 #  ${PCL_LIBRARIES}
 # )
-target_link_libraries(region_growing_segmentation
- ${catkin_LIBRARIES}
- ${PCL_LIBRARIES}
-)
 # target_link_libraries(otamesi
 #  ${catkin_LIBRARIES}
 #  ${PCL_LIBRARIES}
 # )
-target_link_libraries(calc_shape
- ${catkin_LIBRARIES}
- ${PCL_LIBRARIES}
-)
+# target_link_libraries(calc_shape
+#  ${catkin_LIBRARIES}
+#  ${PCL_LIBRARIES}
+# )
 target_link_libraries(calc_shape_savecloud
  ${catkin_LIBRARIES}
  ${PCL_LIBRARIES}
 )
 target_link_libraries(save_velodyne_points
+ ${catkin_LIBRARIES}
+ ${PCL_LIBRARIES}
+)
+target_link_libraries(save_velodyne_points_ver2
+ ${catkin_LIBRARIES}
+ ${PCL_LIBRARIES}
+)
+target_link_libraries(save_velodyne_points_odometry
  ${catkin_LIBRARIES}
  ${PCL_LIBRARIES}
 )
@@ -410,70 +296,6 @@ target_link_libraries(ransac_example
  ${PCL_LIBRARIES}
 )
 
-#target_link_libraries(example8
-#  ${catkin_LIBRARIES}
-#  ${PCL_LIBRARIES}
-#)
-#target_link_libraries(example9
-#  ${catkin_LIBRARIES}
-#  ${PCL_LIBRARIES}
-#)
-#target_link_libraries(example10
-#  ${catkin_LIBRARIES}
-#  ${PCL_LIBRARIES}
-#)
-#target_link_libraries(example11
-#  ${catkin_LIBRARIES}
-#  ${PCL_LIBRARIES}
-#)
-# target_link_libraries(example11_ver2
-#   ${catkin_LIBRARIES}
-#   ${PCL_LIBRARIES}
-# )
-#target_link_libraries(example11_with_tom_laser
-#  ${catkin_LIBRARIES}
-#  ${PCL_LIBRARIES}
-#)
-#target_link_libraries(example12
-#  ${catkin_LIBRARIES}
-#  ${PCL_LIBRARIES}
-#)
-#target_link_libraries(example12_fast_ndt
-#  ${catkin_LIBRARIES}
-#  ${PCL_LIBRARIES}
-#)
-#target_link_libraries(example12_fast_ndt_ver2
-#  ${catkin_LIBRARIES}
-#  ${PCL_LIBRARIES}
-#)
-# target_link_libraries(example12_fast_3d_ndt
-#   ${catkin_LIBRARIES}
-#   ${PCL_LIBRARIES}
-# )
-#target_link_libraries(example12_fast_3d_ndt_for_vis
-#  ${catkin_LIBRARIES}
-#  ${PCL_LIBRARIES}
-#)
-#target_link_libraries(test1
-#  ${catkin_LIBRARIES}
-#  ${PCL_LIBRARIES}
-#)
-#target_link_libraries(sample_pub_odom
-#  ${catkin_LIBRARIES}
-#  ${PCL_LIBRARIES}
-#)
-#target_link_libraries(sample_pub_odom2
-#  ${catkin_LIBRARIES}
-#  ${PCL_LIBRARIES}
-#)
-#target_link_libraries(sample_pub_wp_mode
-#  ${catkin_LIBRARIES}
-#  ${PCL_LIBRARIES}
-#)
-#target_link_libraries(sample_pub_local_goal
-#  ${catkin_LIBRARIES}
-#  ${PCL_LIBRARIES}
-#)
 #
 #
 #target_link_libraries(Dgauss_score
@@ -485,52 +307,6 @@ target_link_libraries(ransac_example
 #  ${PCL_LIBRARIES}
 #)
 #
-#target_link_libraries(infant_height_map_220
-#  ${catkin_LIBRARIES}
-#  ${PCL_LIBRARIES}
-#)
-#target_link_libraries(infant_height_map_221
-#  ${catkin_LIBRARIES}
-#  ${PCL_LIBRARIES}
-#)
-#target_link_libraries(infant_height_map_222
-#  ${catkin_LIBRARIES}
-#  ${PCL_LIBRARIES}
-#)
-# target_link_libraries(infant_curvature_220
-  # ${catkin_LIBRARIES}
-  # ${PCL_LIBRARIES}
-# )
-# target_link_libraries(infant_curvature_221
-  # ${catkin_LIBRARIES}
-  # ${PCL_LIBRARIES}
-# )
-# target_link_libraries(infant_curvature_222
-  # ${catkin_LIBRARIES}
-  # ${PCL_LIBRARIES}
-# )
-#target_link_libraries(infant_curvature_220_new
-#  ${catkin_LIBRARIES}
-#  ${PCL_LIBRARIES}
-#)
-#target_link_libraries(infant_curvature_221_new
-#  ${catkin_LIBRARIES}
-#  ${PCL_LIBRARIES}
-#)
-#target_link_libraries(infant_curvature_222_new
-#  ${catkin_LIBRARIES}
-#  ${PCL_LIBRARIES}
-#)
-#
-#target_link_libraries(vis_tom_laser
-#  ${catkin_LIBRARIES}
-#  ${PCL_LIBRARIES}
-#)
-#
-#target_link_libraries(create_tom_laser_local_map
-#  ${catkin_LIBRARIES}
-#  ${PCL_LIBRARIES}
-#)
 #############
 ## Install ##
 #############

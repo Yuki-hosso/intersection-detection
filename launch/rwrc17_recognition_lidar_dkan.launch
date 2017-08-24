@@ -2,8 +2,8 @@
 <launch>
 	<node name="detect_peak_savecloud" pkg="hsd_pcl_tutorial" type="detect_peak_savecloud"/>
 	<node name="calc_shape_savecloud" pkg="hsd_pcl_tutorial" type="calc_shape_savecloud"/>
-	<node name="save_velodyne_points" pkg="hsd_pcl_tutorial" type="save_velodyne_points"/>
-	<!-- <node name="save_velodyne_points_ver2" pkg="hsd_pcl_tutorial" type="save_velodyne_points_ver2"/> -->
+	<!-- <node name="save_velodyne_points" pkg="hsd_pcl_tutorial" type="save_velodyne_points"/> -->
+	<node name="save_velodyne_points_ver2" pkg="hsd_pcl_tutorial" type="save_velodyne_points_ver2"/>
 	<node name="hsd_normal_shimizu2" pkg="hsd_pcl_tutorial" type="hsd_normal_shimizu2"/>
 	<node name="rwrc14_remove_cluster_for_3dmap" pkg="hsd_pcl_tutorial" type="rwrc14_remove_cluster_for_3dmap"/>
 	<node name="pc2local_occu_map_zed" pkg="obstacle_map" type="pc2local_occu_map_zed"/>
