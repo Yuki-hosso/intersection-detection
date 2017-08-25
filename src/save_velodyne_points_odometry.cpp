@@ -39,7 +39,8 @@ bool odom_callback = false;
 bool points_callback = false;
 double d_x=0.0, d_y=0.0, d_z=0.0;
 double angle_x_=0.0, angle_y_=0.0, angle_z_=0.0;
-int loop = 15;
+// int loop = 15;
+int loop = 5;
 // int SAVE_SIZE = 10000;
 int SAVE_SIZE = 18000;
 
@@ -68,6 +69,16 @@ inline void Copy_point(PointA& org,PointA& save)
 	save.normal_z = org.normal_z;
 	save.intensity = org.intensity;
 	save.curvature = org.curvature;
+}
+
+inline bool Odometry_threshold(double &s_x,double &s_y,double &x,double &y)
+{
+	double distance = sqrt( pow(s_x -x,2) + pow(s_y - y,2) );
+	if(distance>0.5){
+		return true;
+	}else{
+		return false;
+	}
 }
 
 void cnv(CloudAPtr org, CloudAPtr rsl, 
@@ -174,9 +185,12 @@ int main (int argc, char** argv)
 
 	// CloudAPtr conv_cloud (new CloudA);
 	CloudAPtr conv_cloud (new CloudA);
-	CloudAPtr save_cloud (new CloudA);
-	save_cloud->resize(SAVE_SIZE * loop);
+	// CloudAPtr save_cloud (new CloudA);
+	CloudA save_cloud;
+	save_cloud.resize(SAVE_SIZE * loop);
 	int save_count = 0;
+	double saveodom_x = 0.0;
+	double saveodom_y = 0.0;
 	ros::Rate loop_rate(20); // 20
 	// ros::Rate loop_rate(30); // 20
 	while (ros::ok()){
@@ -208,7 +222,6 @@ int main (int argc, char** argv)
 			minmax_cloud->points.clear();
 			curv_cloud->points.clear();
 			cnv(tmp_cloud, conv_cloud, d_x, d_y, d_z, angle_x_, angle_y_, angle_z_);
-			CloudA pub_cloud;
 			size_t cloud_size = conv_cloud->points.size();
 			if(max_size<cloud_size){
 				cout<<cloud_size<<endl;
@@ -217,9 +230,9 @@ int main (int argc, char** argv)
 			// for(size_t i=0;i<cloud_size;i++){
 			// 	pub_cloud.push_back(conv_cloud->points[i]);
 			// }
-			/////////////////////save_cloud/////////////////////////
+			/////////////////////up-date save_cloud/////////////////////////
 			for(size_t i=0;i<cloud_size;i++){
-				Copy_point(conv_cloud->points[i],save_cloud->points[SAVE_SIZE*save_count+i]);
+				Copy_point(conv_cloud->points[i],save_cloud.points[SAVE_SIZE*save_count+i]);
 			}
 			PointA surplus;
 			surplus.x = 0;
@@ -227,19 +240,18 @@ int main (int argc, char** argv)
 			surplus.z = 0;
 			#pragma omp parallel for
 			for(size_t i = SAVE_SIZE*save_count+cloud_size;i<SAVE_SIZE*(save_count+1);i++){
-				Copy_point(surplus,save_cloud->points[i]);
+				Copy_point(surplus,save_cloud.points[i]);
 			}
-			///////////////////save_cloud/////////////////////////
-			pub_cloud.points.resize(save_cloud->points.size());
+			///////////////////up-date save_cloud/////////////////////////
 			// #pragma omp parallel for
-			for(size_t i=0;i<SAVE_SIZE*loop;i++){
-				// pub_cloud.push_back(save_cloud->points[i]);
-				Copy_point(save_cloud->points[i],pub_cloud.points[i]);
+			if(Odometry_threshold(saveodom_x,saveodom_y,d_x,d_y)){
+				save_count++;
+				save_count = save_count%loop;
+				saveodom_x = d_x;
+				saveodom_y = d_y;
 			}
-			save_count++;
-			save_count = save_count%loop;
 			ros::Time time = ros::Time::now();
-			pubPointCloud2(shape_pub,pub_cloud,"/aaaa",time);
+			pubPointCloud2(shape_pub,save_cloud,"/aaaa",time);
 			tmp_cloud->points.clear();
 		}
         ros::spinOnce();
