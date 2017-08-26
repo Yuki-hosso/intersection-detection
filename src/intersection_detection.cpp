@@ -18,6 +18,7 @@
 #include <pcl/filters/passthrough.h>
 //
 #include<std_msgs/Int32MultiArray.h>
+#include<std_msgs/Float32MultiArray.h>
 #include<geometry_msgs/Pose.h>
 #include <nav_msgs/Odometry.h>
 #include <std_msgs/Bool.h>
@@ -38,6 +39,7 @@ ros::Publisher flag_pub;
 bool callback_flag = false;
 bool screen_flag = false;
 bool odom_callback = false;
+bool update_node_flag = true;
 
 const int loop_count = 10;
 // int loop_count = 20;
@@ -46,6 +48,9 @@ int degree_count = 720;
 int save_number = loop_count*degree_count;
 int save_count = 0;
 
+double node_x = -0.995471;
+double node_y = -14.6942;
+double node_len = sqrt(pow(node_x,2)+pow(node_y,2));
 
 // int save_peak[10*720];
 int save_peak[loop_count*4];
@@ -103,16 +108,32 @@ inline void INIT()
 	}
 }
 
-inline bool intersection_flag(geometry_msgs::Pose &odom,geometry_msgs::Pose &intersec_odom)
+// inline bool intersection_flag(geometry_msgs::Pose &odom,geometry_msgs::Pose &intersec_odom)
+// {
+// 	double difference = abs( sqrt( pow(odom.position.x,2)+pow(odom.position.y,2) ) - sqrt( pow(intersec_odom.position.x,2)+pow(intersec_odom.position.y,2) )  );
+//
+// 	if( sqrt( intersec_odom.position.x==0.0 &&  intersec_odom.position.y==0.0 )){
+// 		return true;
+// 	}
+// 	if(difference>5.0){
+// 		return true;
+// 	}else{
+// 		return false;
+// 	}
+// }
+inline bool intersection_flag_node(geometry_msgs::Pose &odom,geometry_msgs::Pose &intersec_odom)
 {
-	double difference = abs( sqrt( pow(odom.position.x,2)+pow(odom.position.y,2) ) - sqrt( pow(intersec_odom.position.x,2)+pow(intersec_odom.position.y,2) )  );
+	double distance = sqrt( pow(odom.position.x-intersec_odom.position.x,2)+pow(odom.position.y-intersec_odom.position.y,2) );
 
-	if( sqrt( intersec_odom.position.x==0.0 &&  intersec_odom.position.y==0.0 )){
-		return true;
-	}
-	if(difference>5.0){
+	// if( sqrt( intersec_odom.position.x==0.0 &&  intersec_odom.position.y==0.0 )){
+	// 	return true;
+	// }
+	cout<<distance<<":"<<node_len<<endl;
+	if(distance>node_len*0.8){
+		cout<<"true"<<endl;
 		return true;
 	}else{
+		cout<<"false"<<endl;
 		return false;
 	}
 }
@@ -199,6 +220,7 @@ void Intersection_detection(std_msgs::Int32MultiArray &peak,geometry_msgs::Pose 
 			INIT();
 			std_msgs::Bool intersec;
 			intersec.data = true;
+			update_node_flag = false;
 			flag_pub.publish(intersec);
 			// cout<<tmp[0]<<endl;
 			// cout<<tmp[1]<<endl;
@@ -251,6 +273,14 @@ void OdomCallback(const nav_msgs::OdometryConstPtr& input){
 	odom_callback = true;
 }
 
+void Next_node(const std_msgs::Float32MultiArray msg)
+{
+	node_len = sqrt(pow(node_x-msg.data[0],2)+pow(node_y-msg.data[1],2) );
+	node_x = msg.data[0];
+	node_y = msg.data[1];
+	update_node_flag = true;
+}
+
 int main (int argc, char** argv)
 {
     // Initialize ROS
@@ -261,6 +291,7 @@ int main (int argc, char** argv)
     // Create a ROS subscriber for the input point cloud
     // ros::Subscriber sub = nh.subscribe ("/velodyne_points", 1, velodyne_cb);
     ros::Subscriber sub = nh.subscribe ("/peak/deg", 1, Peak_deg);
+    ros::Subscriber sub_xy = nh.subscribe ("/next_xy", 1, Next_node);
     // ros::Subscriber sub = nh.subscribe ("/peak/deg2", 1, Peak_deg);
 	ros::Subscriber sub_lcl = n.subscribe("/lcl",1,OdomCallback);
     // Create a ROS publisher for the output point cloud
@@ -280,7 +311,8 @@ int main (int argc, char** argv)
 		if(callback_flag && odom_callback){
 			callback_flag = false;
 			odom_callback = false;
-			if(intersection_flag(odom,intersec_odom)){
+			// if(intersection_flag(odom,intersec_odom)){
+			if(intersection_flag_node(odom,intersec_odom)&&update_node_flag){
 				Intersection_detection(peak_in,odom,intersec_odom);
 			}
 		}
