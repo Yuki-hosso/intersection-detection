@@ -108,19 +108,17 @@ inline void INIT()
 	}
 }
 
-// inline bool intersection_flag(geometry_msgs::Pose &odom,geometry_msgs::Pose &intersec_odom)
-// {
-// 	double difference = abs( sqrt( pow(odom.position.x,2)+pow(odom.position.y,2) ) - sqrt( pow(intersec_odom.position.x,2)+pow(intersec_odom.position.y,2) )  );
-//
-// 	if( sqrt( intersec_odom.position.x==0.0 &&  intersec_odom.position.y==0.0 )){
-// 		return true;
-// 	}
-// 	if(difference>5.0){
-// 		return true;
-// 	}else{
-// 		return false;
-// 	}
-// }
+inline bool intersection_flag(geometry_msgs::Pose &odom,geometry_msgs::Pose &intersec_odom)
+{
+	// double difference = abs( sqrt( pow(odom.position.x,2)+pow(odom.position.y,2) ) - sqrt( pow(intersec_odom.position.x,2)+pow(intersec_odom.position.y,2) )  );
+	double difference = abs( sqrt( pow(odom.position.x-intersec_odom.position.x,2)+pow(odom.position.y-intersec_odom.position.y,2) )  );
+
+	if(difference>1.0){
+		return true;
+	}else{
+		return false;
+	}
+}
 inline bool intersection_flag_node(geometry_msgs::Pose &odom,geometry_msgs::Pose &intersec_odom)
 {
 	double distance = sqrt( pow(odom.position.x-intersec_odom.position.x,2)+pow(odom.position.y-intersec_odom.position.y,2) );
@@ -136,6 +134,53 @@ inline bool intersection_flag_node(geometry_msgs::Pose &odom,geometry_msgs::Pose
 		cout<<"false"<<endl;
 		return false;
 	}
+}
+
+int cnt_degree[360];
+int loop_tra = 0;
+void trajectory_estimate(geometry_msgs::Pose &odom){
+	int deg = (int)((odom.orientation.z+M_PI)/M_PI*180.0);
+	cnt_degree[deg]+=1;
+	loop_tra++;
+	if(loop_tra>10){
+		double trajectory = 0.0;
+		for(int i=0;i<360;i++){
+			if(cnt_degree[i]!=0){
+				trajectory += (double)cnt_degree[i]*i;
+			}
+		}
+		trajectory = trajectory/loop_tra;
+		cout<<"trajectory:"<<trajectory<<endl;
+	}
+}
+
+void Init_deg()
+{
+	for(int i=0;i<360;i++){
+		cnt_degree[i]=0;
+	}
+}
+
+
+void Intersec_init()
+{
+	INIT();
+	loop_tra=0;
+	Init_deg();
+}
+
+void Peak_global(std_msgs::Int32MultiArray &peak,geometry_msgs::Pose &odom)
+{
+	int deg = (int)((odom.orientation.z+M_PI)/M_PI*180.0);
+	int tmp_peak = 0;
+	for(int i=0;i<peak.layout.data_offset;i++){
+		tmp_peak =(int) peak.data[i]/2 - deg;
+		if(tmp_peak<0){
+			tmp_peak += 360;
+		}
+		cout<<"global_peak"<<tmp_peak<<endl;
+	}
+
 }
 
 bool one_flag = false;
@@ -217,7 +262,7 @@ void Intersection_detection(std_msgs::Int32MultiArray &peak,geometry_msgs::Pose 
 			intersec_odom.position.x = odom.position.x;
 			intersec_odom.position.y = odom.position.y;
 			intersec_odom.position.z = odom.position.z;
-			INIT();
+			// INIT();
 			std_msgs::Bool intersec;
 			intersec.data = true;
 			update_node_flag = false;
@@ -227,6 +272,7 @@ void Intersection_detection(std_msgs::Int32MultiArray &peak,geometry_msgs::Pose 
 			// cout<<tmp[2]<<endl;
 			// cout<<tmp[3]<<endl;
 			// INIT();
+			Intersec_init();
 		}
 		if(tmp[0]>5||tmp[2]>5){
 			cout<<"road!"<<endl;
@@ -302,6 +348,7 @@ int main (int argc, char** argv)
 	// 	save_peak[i] = 0;
 	// }
 	INIT();
+	Init_deg();
 	cout<<"init"<<endl;
 	//
 	geometry_msgs::Pose intersec_odom;
@@ -311,6 +358,10 @@ int main (int argc, char** argv)
 		if(callback_flag && odom_callback){
 			callback_flag = false;
 			odom_callback = false;
+			if(intersection_flag(odom,intersec_odom)){
+				trajectory_estimate(odom);
+			}
+			Peak_global(peak_in,odom);
 			// if(intersection_flag(odom,intersec_odom)){
 			if(intersection_flag_node(odom,intersec_odom)&&update_node_flag){
 				Intersection_detection(peak_in,odom,intersec_odom);
