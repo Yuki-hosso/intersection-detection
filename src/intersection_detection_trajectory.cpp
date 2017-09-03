@@ -339,6 +339,7 @@ int non_update = 0;
 void Observ_function(std_msgs::Int32MultiArray &peak,geometry_msgs::Pose odom,geometry_msgs::Pose &intersec_odom,double trajectory)
 {
 	int diff_tra = 0;
+	int threshold_degree = 4;
 	bool intersection_detection = false;
 	switch(observ_mode){
 		case 1://＋字交差点またはT字交差点
@@ -368,11 +369,16 @@ void Observ_function(std_msgs::Int32MultiArray &peak,geometry_msgs::Pose odom,ge
 						int diff_new = abs(diff_tra - ideal_two);
 						cout<<"old diff:"<<diff_old<<endl;
 						cout<<"new diff:"<<diff_new<<endl;
-						if(diff_new<diff_old){
+						if(diff_new <threshold_degree ||diff_old <threshold_degree){
+							intersection_detection = true;
+							cout<<"JUST INTERSECTION"<<endl;
+							// cout<<"old diff:"<<diff_old<<endl;
+							// cout<<"new diff:"<<diff_new<<endl;
+						}else if(diff_new<=diff_old){
 							update_count_two++;
 							two_degree = peak.data[i];
 						}else{
-							if(diff_new-diff_old>2||diff_old <4||diff_new <4){
+							if(diff_new-diff_old>2){
 								cout<<"PAST AWAY"<<endl;
 								cout<<"old diff:"<<diff_old<<endl;
 								cout<<"new diff:"<<diff_new<<endl;
@@ -387,11 +393,16 @@ void Observ_function(std_msgs::Int32MultiArray &peak,geometry_msgs::Pose odom,ge
 						int diff_new = abs(diff_tra - ideal_four);
 						cout<<"old diff:"<<diff_old<<endl;
 						cout<<"new diff:"<<diff_new<<endl;
-						if(diff_new<diff_old){
+						if(diff_new <threshold_degree ||diff_old <threshold_degree){
+							intersection_detection = true;
+							cout<<"JUST INTERSECTION"<<endl;
+							// cout<<"old diff:"<<diff_old<<endl;
+							// cout<<"new diff:"<<diff_new<<endl;
+						}else if(diff_new<=diff_old){
 							update_count_four++;
 							four_degree = peak.data[i];
 						}else{
-							if(diff_new-diff_old>2||diff_old <4||diff_new <4){
+							if(diff_new-diff_old>2){
 								cout<<"PAST AWAY"<<endl;
 								cout<<"old diff:"<<diff_old<<endl;
 								cout<<"new diff:"<<diff_new<<endl;
@@ -427,16 +438,21 @@ void Observ_function(std_msgs::Int32MultiArray &peak,geometry_msgs::Pose odom,ge
 						int diff_new = abs(diff_tra - ideal_two);
 						cout<<"old diff:"<<diff_old<<endl;
 						cout<<"new diff:"<<diff_new<<endl;
-						if(diff_new<=diff_old){
+						if(diff_new <threshold_degree ||diff_old <threshold_degree){
+							intersection_detection = true;
+							cout<<"JUST INTERSECTION"<<endl;
+							// cout<<"old diff:"<<diff_old<<endl;
+							// cout<<"new diff:"<<diff_new<<endl;
+						}else if(diff_new<=diff_old){
 							update_count++;
 							// cout<<"old diff:"<<diff_old<<endl;
 							// cout<<"new diff:"<<diff_new<<endl;
 							two_degree = peak.data[i];
 						}else{
-							if(diff_new-diff_old>2||diff_old <4||diff_new <4){
+							if(diff_new-diff_old>2){
 								cout<<"PAST AWAY"<<endl;
-								cout<<"old diff:"<<diff_old<<endl;
-								cout<<"new diff:"<<diff_new<<endl;
+								// cout<<"old diff:"<<diff_old<<endl;
+								// cout<<"new diff:"<<diff_new<<endl;
 								intersection_detection = true;
 							}else{
 								update_count++;
@@ -469,13 +485,18 @@ void Observ_function(std_msgs::Int32MultiArray &peak,geometry_msgs::Pose odom,ge
 						int diff_new = abs(diff_tra - ideal_four);
 						cout<<"old diff:"<<diff_old<<endl;
 						cout<<"new diff:"<<diff_new<<endl;
-						if(diff_new<diff_old){
+						if(diff_new <threshold_degree ||diff_old <threshold_degree){
+							intersection_detection = true;
+							cout<<"JUST INTERSECTION"<<endl;
+							// cout<<"old diff:"<<diff_old<<endl;
+							// cout<<"new diff:"<<diff_new<<endl;
+						}else if(diff_new<=diff_old){
 							update_count++;
 							// cout<<"old diff:"<<diff_old<<endl;
 							// cout<<"new diff:"<<diff_new<<endl;
 							four_degree = peak.data[i];
 						}else{
-							if(diff_new-diff_old>2||diff_old <4||diff_new <4){
+							if(diff_new-diff_old>2){
 								cout<<"PAST AWAY"<<endl;
 								cout<<"old diff:"<<diff_old<<endl;
 								cout<<"new diff:"<<diff_new<<endl;
