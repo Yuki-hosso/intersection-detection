@@ -104,6 +104,7 @@ int save_peak[loop_count*4];
 
 inline void INIT()
 {
+	cout<<"INIT"<<endl;
 	for(int i=0;i<loop_count*4;i++){
 		save_peak[i] = 0;
 	}
@@ -141,7 +142,8 @@ inline bool intersection_flag_node(geometry_msgs::Pose &odom,geometry_msgs::Pose
 	// 	return true;
 	// }
 	cout<<distance<<":"<<node_len<<endl;
-	if(distance>node_len*0.8){
+	// if(distance>node_len*0.8){
+	if(distance>node_len*0.85){
 		cout<<"true"<<endl;
 		return true;
 	}else{
@@ -153,8 +155,15 @@ inline bool intersection_flag_node(geometry_msgs::Pose &odom,geometry_msgs::Pose
 
 int cnt_degree[360];
 int loop_tra = 0;
+bool unliner_flag = false;
 double trajectory_estimate(geometry_msgs::Pose &odom){
-	int deg = (int)((odom.orientation.z+M_PI)/M_PI*180.0);
+	int deg = abs((int)((odom.orientation.z+M_PI)/M_PI*180.0));
+	if(loop_tra==0){unliner_flag = false;}
+	if(deg>360){
+		deg -= 360;
+		unliner_flag = true;
+	}
+	cout<<"current_degree"<<deg<<endl;
 	cnt_degree[deg]+=1;
 	loop_tra++;
 	double trajectory = 0.0;
@@ -162,10 +171,21 @@ double trajectory_estimate(geometry_msgs::Pose &odom){
 		// trajectory = 0.0;
 		for(int i=0;i<360;i++){
 			if(cnt_degree[i]!=0){
-				trajectory += (double)cnt_degree[i]*i;
+				if(unliner_flag){
+					if(i>=0&&i<=20){
+						trajectory += (double)cnt_degree[i]*(i+360);
+					}else{
+						trajectory += (double)cnt_degree[i]*i;
+					}
+				}else{
+					trajectory += (double)cnt_degree[i]*i;
+				}
 			}
 		}
 		trajectory = trajectory/loop_tra;
+		if(trajectory>360.0){
+			trajectory -= 360.0;
+		}
 		// cout<<"trajectory:"<<trajectory<<endl;
 	}
 	cout<<"trajectory:"<<trajectory<<endl;
@@ -174,6 +194,7 @@ double trajectory_estimate(geometry_msgs::Pose &odom){
 
 void Init_deg()
 {
+	cout<<"Init_degree"<<endl;
 	for(int i=0;i<360;i++){
 		cnt_degree[i]=0;
 	}
@@ -194,14 +215,17 @@ void Peak_global(std_msgs::Int32MultiArray &peak,geometry_msgs::Pose &odom,std_m
 	int tmp_peak = 0;
 	for(int i=0;i<peak.layout.data_offset;i++){
 		tmp_peak =(int) peak.data[i]/2 - deg;
-		if(tmp_peak<0){
+		// if(tmp_peak<0){
+		// 	tmp_peak += 360;
+		// }
+		while(tmp_peak<0){
 			tmp_peak += 360;
 		}
 		peak_global.layout.data_offset = peak.layout.data_offset;
 		peak_global.data.push_back(tmp_peak);
 		// cout<<"global_peak"<<tmp_peak<<endl;
 	}
-	// cout<<"global"<<peak_global<<endl;
+	cout<<"global"<<peak_global<<endl;
 
 }
 
@@ -221,15 +245,17 @@ void Intersection_detection(std_msgs::Int32MultiArray &peak,geometry_msgs::Pose 
 		if(diff_tra<0){
 			diff_tra += 360;
 		}
-		// cout<<"differrent"<<diff_tra<<endl;
+		cout<<"differrent"<<diff_tra<<endl;
 		if(diff_tra<20||diff_tra>340){
 			one_flag = true;
-		}else if(diff_tra>70&&diff_tra<110){
+		// }else if(diff_tra>70&&diff_tra<110){
+		}else if(diff_tra>65&&diff_tra<115){
 			two_flag = true;
 			two_degree = peak.data[i];
 		}else if(diff_tra>160&&diff_tra<200){
 			three_flag = true;
-		}else if(diff_tra>250&&diff_tra<290){
+		// }else if(diff_tra>250&&diff_tra<290){
+		}else if(diff_tra>245&&diff_tra<295){
 			four_flag = true;
 			four_degree = peak.data[i];
 		}
@@ -299,7 +325,7 @@ void Intersection_detection(std_msgs::Int32MultiArray &peak,geometry_msgs::Pose 
 			}else{
 				observ_mode = 3;
 			}
-			cout<<"observ mode"<<endl;
+			cout<<"observ mode"<<observ_mode<<endl;
 			// cout<<"intersection!!!!!!!!!!!!!!!!!!!!"<<endl;
 			// intersec_odom.position.x = odom.position.x;
 			// intersec_odom.position.y = odom.position.y;
@@ -336,10 +362,12 @@ void Intersection_detection(std_msgs::Int32MultiArray &peak,geometry_msgs::Pose 
 }
 
 int non_update = 0;
+int observ_update = 0;
 void Observ_function(std_msgs::Int32MultiArray &peak,geometry_msgs::Pose odom,geometry_msgs::Pose &intersec_odom,double trajectory)
 {
 	int diff_tra = 0;
-	int threshold_degree = 4;
+	// int threshold_degree = 4;
+	int threshold_degree = 3;
 	bool intersection_detection = false;
 	switch(observ_mode){
 		case 1://＋字交差点またはT字交差点
@@ -387,6 +415,8 @@ void Observ_function(std_msgs::Int32MultiArray &peak,geometry_msgs::Pose odom,ge
 								update_count_two++;
 							}
 						}
+					}else if(abs(diff_tra_two - diff_tra)<20){
+						update_count_two++;
 					}
 					if(abs(diff_tra_four - diff_tra)<10){
 						int diff_old = abs(diff_tra_four - ideal_four);
@@ -411,10 +441,14 @@ void Observ_function(std_msgs::Int32MultiArray &peak,geometry_msgs::Pose odom,ge
 								update_count_four++;
 							}
 						}
+					}else if(abs(diff_tra_four - diff_tra)<20){
+						update_count_four++;
 					}
 				}
 				if(update_count_two==0||update_count_four==0){
 					non_update++;
+				}else{
+					observ_update++;
 				}
 				break;
 			}
@@ -436,8 +470,11 @@ void Observ_function(std_msgs::Int32MultiArray &peak,geometry_msgs::Pose odom,ge
 					if(abs(diff_tra_old - diff_tra)<10){
 						int diff_old = abs(diff_tra_old - ideal_two);
 						int diff_new = abs(diff_tra - ideal_two);
-						cout<<"old diff:"<<diff_old<<endl;
-						cout<<"new diff:"<<diff_new<<endl;
+						cout<<"two_degree:"<<two_degree<<endl;
+						cout<<"diff_tra_old:"<<diff_tra_old<<endl;
+						cout<<"diff_tra:"<<diff_tra<<endl;
+						// cout<<"old diff:"<<diff_old<<endl;
+						// cout<<"new diff:"<<diff_new<<endl;
 						if(diff_new <threshold_degree ||diff_old <threshold_degree){
 							intersection_detection = true;
 							cout<<"JUST INTERSECTION"<<endl;
@@ -458,10 +495,14 @@ void Observ_function(std_msgs::Int32MultiArray &peak,geometry_msgs::Pose odom,ge
 								update_count++;
 							}
 						}
+					}else if(abs(diff_tra_old - diff_tra)<20){
+						update_count++;
 					}
 				}
 				if(update_count==0){
 					non_update++;
+				}else{
+					observ_update++;
 				}
 				break;
 			}
@@ -505,10 +546,14 @@ void Observ_function(std_msgs::Int32MultiArray &peak,geometry_msgs::Pose odom,ge
 								update_count++;
 							}
 						}
+					}else if(abs(diff_tra_old - diff_tra)<20){
+						update_count++;
 					}
 				}
 				if(update_count==0){
 					non_update++;
+				}else{
+					observ_update++;
 				}
 				break;
 			}
@@ -522,9 +567,16 @@ void Observ_function(std_msgs::Int32MultiArray &peak,geometry_msgs::Pose odom,ge
 		cout<<"NON OBSERV"<<endl;
 		// intersection_detection = true;
 		non_update = 0;
+		observ_update = 0;
 		two_degree = 0;
 		four_degree = 0;
 		observ_flag = false;
+		Intersec_init();
+	}
+
+	if(observ_update>15){
+		cout<<"TOO OBSERV"<<endl;
+		intersection_detection = true;
 	}
 
 	if(intersection_detection){
@@ -539,7 +591,13 @@ void Observ_function(std_msgs::Int32MultiArray &peak,geometry_msgs::Pose odom,ge
 
 		observ_flag = false;
 		intersection_detection = false;
+		non_update = 0;
+		observ_update = 0;
+		two_degree = 0;
+		four_degree = 0;
 		Intersec_init();
+
+		cout<<"end intersec_init"<<endl;
 	}
 }
 
