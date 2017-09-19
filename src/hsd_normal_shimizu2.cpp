@@ -80,8 +80,10 @@ inline void Visualize(CloudAPtr cloud)
 {
 	size_t cloud_size = cloud->points.size();
 	size_t count = 0;
-	// double para = 0.985;
-	double para = 0.94;
+	double para = 0.985;//tsukuba glass
+	// double para = 0.96;//ikuta sunny
+	// double para = 0.95;
+	// double para = 0.94;//ikuta rain
 	// double para = 0.90;
 	for(size_t i=0;i<cloud_size;i++){
         // if (fabs(cloud->points[i].normal_z) >  para){
@@ -162,7 +164,10 @@ inline void Visualize_curv(CloudAPtr cloud)
 	// double para = 0.10;
 	// double para = 0.17;
 	// double para = 0.20;
-	double para = 0.25;
+	double para = 0.23;//ikuta sunny
+	// double para = 0.25;
+	// double para = 0.30;
+	// double para = 0.37;//ikuta rain
 	// double para = 0.80;
 	for(size_t i=0;i<cloud_size;i++){
         if (fabs(cloud->points[i].curvature) >  para){
