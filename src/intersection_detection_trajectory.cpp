@@ -52,6 +52,7 @@ int save_count = 0;
 double node_x = -0.995471;
 double node_y = -14.6942;
 double node_len = sqrt(pow(node_x,2)+pow(node_y,2));
+int allow_error = 0;
 
 // int save_peak[10*720];
 int save_peak[loop_count*4];
@@ -225,6 +226,7 @@ void Peak_global(std_msgs::Int32MultiArray &peak,geometry_msgs::Pose &odom,std_m
 		peak_global.data.push_back(tmp_peak);
 		// cout<<"global_peak"<<tmp_peak<<endl;
 	}
+	cout<<"original"<<peak<<endl;
 	cout<<"global"<<peak_global<<endl;
 
 }
@@ -246,16 +248,16 @@ void Intersection_detection(std_msgs::Int32MultiArray &peak,geometry_msgs::Pose 
 			diff_tra += 360;
 		}
 		cout<<"differrent"<<diff_tra<<endl;
-		if(diff_tra<20||diff_tra>340){
+		if(diff_tra<(20-allow_error)||diff_tra>(340+allow_error)){
 			one_flag = true;
 		// }else if(diff_tra>70&&diff_tra<110){
-		}else if(diff_tra>65&&diff_tra<115){
+		}else if(diff_tra>(65-allow_error)&&diff_tra<(115+allow_error)){
 			two_flag = true;
 			two_degree = peak.data[i];
-		}else if(diff_tra>160&&diff_tra<200){
+		}else if(diff_tra>(160-allow_error)&&diff_tra<(200+allow_error)){
 			three_flag = true;
 		// }else if(diff_tra>250&&diff_tra<290){
-		}else if(diff_tra>245&&diff_tra<295){
+		}else if(diff_tra>(245-allow_error)&&diff_tra<(295+allow_error)){
 			four_flag = true;
 			four_degree = peak.data[i];
 		}
@@ -392,7 +394,7 @@ void Observ_function(std_msgs::Int32MultiArray &peak,geometry_msgs::Pose odom,ge
 					}
 					// cout<<"differrent"<<diff_tra<<endl;
 					///////////////two//////////////////////
-					if(abs(diff_tra_two - diff_tra)<10){
+					if(abs(diff_tra_two - diff_tra)<(10+allow_error)){
 						int diff_old = abs(diff_tra_two - ideal_two);
 						int diff_new = abs(diff_tra - ideal_two);
 						cout<<"old diff:"<<diff_old<<endl;
@@ -415,10 +417,10 @@ void Observ_function(std_msgs::Int32MultiArray &peak,geometry_msgs::Pose odom,ge
 								update_count_two++;
 							}
 						}
-					}else if(abs(diff_tra_two - diff_tra)<20){
+					}else if(abs(diff_tra_two - diff_tra)<(20+allow_error)){
 						update_count_two++;
 					}
-					if(abs(diff_tra_four - diff_tra)<10){
+					if(abs(diff_tra_four - diff_tra)<(10+allow_error)){
 						int diff_old = abs(diff_tra_four - ideal_four);
 						int diff_new = abs(diff_tra - ideal_four);
 						cout<<"old diff:"<<diff_old<<endl;
@@ -441,7 +443,7 @@ void Observ_function(std_msgs::Int32MultiArray &peak,geometry_msgs::Pose odom,ge
 								update_count_four++;
 							}
 						}
-					}else if(abs(diff_tra_four - diff_tra)<20){
+					}else if(abs(diff_tra_four - diff_tra)<(20+allow_error)){
 						update_count_four++;
 					}
 				}
@@ -467,7 +469,7 @@ void Observ_function(std_msgs::Int32MultiArray &peak,geometry_msgs::Pose odom,ge
 						diff_tra += 360;
 					}
 					// cout<<"differrent"<<diff_tra<<endl;
-					if(abs(diff_tra_old - diff_tra)<10){
+					if(abs(diff_tra_old - diff_tra)<(10+allow_error)){
 						int diff_old = abs(diff_tra_old - ideal_two);
 						int diff_new = abs(diff_tra - ideal_two);
 						cout<<"two_degree:"<<two_degree<<endl;
@@ -495,7 +497,7 @@ void Observ_function(std_msgs::Int32MultiArray &peak,geometry_msgs::Pose odom,ge
 								update_count++;
 							}
 						}
-					}else if(abs(diff_tra_old - diff_tra)<20){
+					}else if(abs(diff_tra_old - diff_tra)<(20+allow_error)){
 						update_count++;
 					}
 				}
@@ -521,7 +523,7 @@ void Observ_function(std_msgs::Int32MultiArray &peak,geometry_msgs::Pose odom,ge
 						diff_tra += 360;
 					}
 					// cout<<"differrent"<<diff_tra<<endl;
-					if(abs(diff_tra_old - diff_tra)<10){
+					if(abs(diff_tra_old - diff_tra)<(10+allow_error)){
 						int diff_old = abs(diff_tra_old - ideal_four);
 						int diff_new = abs(diff_tra - ideal_four);
 						cout<<"old diff:"<<diff_old<<endl;
@@ -546,7 +548,7 @@ void Observ_function(std_msgs::Int32MultiArray &peak,geometry_msgs::Pose odom,ge
 								update_count++;
 							}
 						}
-					}else if(abs(diff_tra_old - diff_tra)<20){
+					}else if(abs(diff_tra_old - diff_tra)<(20+allow_error)){
 						update_count++;
 					}
 				}
@@ -627,11 +629,26 @@ void OdomCallback(const nav_msgs::OdometryConstPtr& input){
 	odom_callback = true;
 }
 
+geometry_msgs::Pose intersec_odom;
 void Next_node(const std_msgs::Float32MultiArray msg)
 {
 	node_len = sqrt(pow(node_x-msg.data[0],2)+pow(node_y-msg.data[1],2) );
 	node_x = msg.data[0];
 	node_y = msg.data[1];
+	if(node_len<15.0){
+		allow_error = 5;
+	}else{
+		allow_error = 0;
+	}
+	if(msg.data[3]==1){//o-button
+		intersec_odom.position.x = odom.position.x;
+		intersec_odom.position.y = odom.position.y;
+		intersec_odom.position.z = odom.position.z;
+		Intersec_init();
+	}else if(msg.data[3]==2){//x-button
+		node_len = 1.0;
+		allow_error = 10;
+	}
 	update_node_flag = true;
 }
 
@@ -659,7 +676,7 @@ int main (int argc, char** argv)
 	Init_deg();
 	cout<<"init"<<endl;
 	//
-	geometry_msgs::Pose intersec_odom;
+	// geometry_msgs::Pose intersec_odom;
 	std_msgs::Int32MultiArray peak_global;
 	double trajectory = 0.0;
     // main handle
