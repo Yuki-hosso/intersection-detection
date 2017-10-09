@@ -117,7 +117,8 @@ inline bool intersection_traj_flag(geometry_msgs::Pose &odom,geometry_msgs::Pose
 	double difference = abs( sqrt( pow(odom.position.x-intersec_odom.position.x,2)+pow(odom.position.y-intersec_odom.position.y,2) )  );
 
 	// if(difference>1.0){
-	if(difference>3.0){
+	// if(difference>3.0){
+	if(difference>5.0){
 		return true;
 	}else{
 		return false;
@@ -129,7 +130,7 @@ inline bool intersection_flag(geometry_msgs::Pose &odom,geometry_msgs::Pose &int
 	double difference = abs( sqrt( pow(odom.position.x-intersec_odom.position.x,2)+pow(odom.position.y-intersec_odom.position.y,2) )  );
 
 	// if(difference>1.0){
-	if(difference>5.0){
+	if(difference>7.0){
 		return true;
 	}else{
 		return false;
@@ -186,6 +187,54 @@ double trajectory_estimate(geometry_msgs::Pose &odom){
 		trajectory = trajectory/loop_tra;
 		if(trajectory>360.0){
 			trajectory -= 360.0;
+		}
+		// cout<<"trajectory:"<<trajectory<<endl;
+	}
+	cout<<"trajectory:"<<trajectory<<endl;
+	return trajectory;
+}
+double trajectory_estimate_unliner(geometry_msgs::Pose &odom,double o_tra){
+	unliner_flag = false;
+	if(loop_tra>0){
+		if(o_tra<20.0||o_tra>340.0){
+			unliner_flag = true;
+		}
+	}
+	int deg = abs((int)((odom.orientation.z+M_PI)/M_PI*180.0));
+	cout<<"current_degree"<<deg<<endl;
+	cnt_degree[deg]+=1;
+	loop_tra++;
+	double trajectory = 0.0;
+	if(loop_tra>10){
+		// trajectory = 0.0;
+		for(int i=0;i<360;i++){
+			if(cnt_degree[i]!=0){
+				if(unliner_flag){
+					if(o_tra<20.0){
+						if(340<=i&&i<=360){
+							trajectory += (double)cnt_degree[i]*(i-360);
+						}else{
+							trajectory += (double)cnt_degree[i]*i;
+						}
+					}
+					if(o_tra>340.0){
+						if(0<=i&&i<=20){
+							trajectory += (double)cnt_degree[i]*(i+360);
+						}else{
+							trajectory += (double)cnt_degree[i]*i;
+						}
+					}
+				}else{
+					trajectory += (double)cnt_degree[i]*i;
+				}
+			}
+		}
+		trajectory = trajectory/loop_tra;
+		if(trajectory>360.0){
+			trajectory -= 360.0;
+		}
+		if(trajectory<0.0){
+			trajectory += 360.0;
 		}
 		// cout<<"trajectory:"<<trajectory<<endl;
 	}
@@ -687,7 +736,8 @@ int main (int argc, char** argv)
 			callback_flag = false;
 			odom_callback = false;
 			if(intersection_traj_flag(odom,intersec_odom)){
-				trajectory = trajectory_estimate(odom);
+				// trajectory = trajectory_estimate(odom);
+				trajectory = trajectory_estimate_unliner(odom,trajectory);
 			}
 			Peak_global(peak_in,odom,peak_global);
 			if(intersection_flag(odom,intersec_odom)){  //////change here
