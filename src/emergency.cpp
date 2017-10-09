@@ -108,6 +108,7 @@ int main (int argc, char** argv)
 				cout<<"emergency_mode"<<endl;
 				Emergency_mode(cluster_centroid);
 			}else{
+				cout<<"check_mode"<<endl;
 				Emergency(cluster_centroid);
 			}
 		}
