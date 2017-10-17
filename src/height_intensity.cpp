@@ -59,19 +59,30 @@ inline double Diff(PointA velodyne)
 	return diff;
 }
 
-void Create_intensity_map(PointA &velodyne,PointA &intensity)
+// void Create_intensity_map(PointA &velodyne,PointA &intensity)
+// {
+// 	// if(velodyne.intensity/10.0>3.1){//long grass
+// 	// if(velodyne.intensity/10.0>2.1){//short grass
+// 	if(velodyne.intensity/10.0>1.1&&Diff(velodyne)<=8.0){//tsukuba rainy grass
+// 		intensity.x = velodyne.x;
+// 		intensity.y = velodyne.y;
+// 		intensity.z = velodyne.intensity/10.0 - 1.3;
+// 		intensity.intensity = velodyne.z;
+// 	}else{
+// 		intensity.x = 0.0;
+// 		intensity.y = 0.0;
+// 		intensity.z = 0.0;
+// 		intensity.intensity = 0.0;
+// 	}
+// }
+void Create_intensity_map_2(PointA &velodyne,CloudA &intensity)
 {
 	// if(velodyne.intensity/10.0>3.1){//long grass
-	if(velodyne.intensity/10.0>2.1){//short grass
-		intensity.x = velodyne.x;
-		intensity.y = velodyne.y;
-		intensity.z = velodyne.intensity/10.0 - 1.3;
-		intensity.intensity = velodyne.z;
-	}else{
-		intensity.x = 0.0;
-		intensity.y = 0.0;
-		intensity.z = 0.0;
-		intensity.intensity = 0.0;
+	// if(velodyne.intensity/10.0>2.1){//short grass
+	if(velodyne.intensity/10.0>1.1&&Diff(velodyne)<=8.0&&Diff(velodyne)>=1.0){//tsukuba rainy grass
+		// velodyne.z = velodyne.intensity/10.0 - 1.3;
+		velodyne.z = 0.0;
+		intensity.points.push_back(velodyne);
 	}
 }
 
@@ -85,12 +96,16 @@ void Intensity_threshold(CloudAPtr &velo_cloud)
 	// 	}
 	// }
 	CloudA intensity_cloud;
-	intensity_cloud.points.resize(cloud_size);
+	// intensity_cloud.points.resize(cloud_size);
+	// for(size_t i=0;i<cloud_size;i++){
+	// 	Create_intensity_map(velo_cloud->points[i],intensity_cloud.points[i]);
+	// }
 	for(size_t i=0;i<cloud_size;i++){
-		Create_intensity_map(velo_cloud->points[i],intensity_cloud.points[i]);
+		Create_intensity_map_2(velo_cloud->points[i],intensity_cloud);
 	}
 
 	//output
+	cout<<"pub cloud size:"<<intensity_cloud.points.size()<<endl;
     ros::Time time = ros::Time::now();
     pubPointCloud2 (inten_pub, intensity_cloud, "/velodyne", time);
 }
@@ -105,7 +120,7 @@ void point_callback(const sensor_msgs::PointCloud2ConstPtr& msg)
 int main (int argc, char** argv)
 {
     // Initialize ROS
-    ros::init (argc, argv, "hsd_normal_shimizu2");
+    ros::init (argc, argv, "height_intensity");
     ros::NodeHandle nh;
     ros::NodeHandle n;
 
