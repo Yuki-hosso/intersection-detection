@@ -19,11 +19,13 @@
 #include <boost/thread/thread.hpp>
 #include <pcl/filters/passthrough.h>
 //
+#include<std_msgs/Int16MultiArray.h>
 #include<std_msgs/Int32MultiArray.h>
 #include<std_msgs/Float32MultiArray.h>
 #include<geometry_msgs/Pose.h>
 #include <nav_msgs/Odometry.h>
 #include <std_msgs/Bool.h>
+#include "node_graph/node_edge_manager.h"
 
 using namespace std;
 using namespace Eigen;
@@ -276,7 +278,7 @@ void Peak_global(std_msgs::Int32MultiArray &peak,geometry_msgs::Pose &odom,std_m
 
 	int tmp_peak = 0;
 	if(deg>deg2){
-		for(int i=0;i<peak.layout.data_offset;i++){
+		for(unsigned int i=0;i<peak.layout.data_offset;i++){
 			tmp_peak =(int) peak.data[i]/2 - deg_diff;
 			// if(tmp_peak<0){
 			// 	tmp_peak += 360;
@@ -289,7 +291,7 @@ void Peak_global(std_msgs::Int32MultiArray &peak,geometry_msgs::Pose &odom,std_m
 			// cout<<"global_peak"<<tmp_peak<<endl;
 		}
 	}else{
-		for(int i=0;i<peak.layout.data_offset;i++){
+		for(unsigned int i=0;i<peak.layout.data_offset;i++){
 			tmp_peak =(int) peak.data[i]/2 + deg_diff;
 			// if(tmp_peak<0){
 			// 	tmp_peak += 360;
@@ -318,7 +320,7 @@ int observ_mode = 0;
 void Intersection_detection(std_msgs::Int32MultiArray &peak,geometry_msgs::Pose &odom,geometry_msgs::Pose &intersec_odom,double trajectory)
 {
 	int diff_tra = 0;
-	for(int i=0;i<peak.layout.data_offset;i++){
+	for(unsigned int i=0;i<peak.layout.data_offset;i++){
 		// diff_tra = peak.data[i] - (int)trajectory;
 		diff_tra = peak.data[i];
 		if(diff_tra<0){
@@ -464,7 +466,7 @@ void Observ_function(std_msgs::Int32MultiArray &peak,geometry_msgs::Pose odom,ge
 					diff_tra_four += 360;
 				}
 
-				for(int i=0;i<peak.layout.data_offset;i++){
+				for(unsigned int i=0;i<peak.layout.data_offset;i++){
 					diff_tra = peak.data[i] - (int)trajectory;
 					if(diff_tra<0){
 						diff_tra += 360;
@@ -540,7 +542,7 @@ void Observ_function(std_msgs::Int32MultiArray &peak,geometry_msgs::Pose odom,ge
 					diff_tra_old += 360;
 				}
 
-				for(int i=0;i<peak.layout.data_offset;i++){
+				for(unsigned int i=0;i<peak.layout.data_offset;i++){
 					diff_tra = peak.data[i] - (int)trajectory;
 					if(diff_tra<0){
 						diff_tra += 360;
@@ -594,7 +596,7 @@ void Observ_function(std_msgs::Int32MultiArray &peak,geometry_msgs::Pose odom,ge
 					diff_tra_old += 360;
 				}
 
-				for(int i=0;i<peak.layout.data_offset;i++){
+				for(unsigned int i=0;i<peak.layout.data_offset;i++){
 					diff_tra = peak.data[i] - (int)trajectory;
 					if(diff_tra<0){
 						diff_tra += 360;
@@ -687,12 +689,22 @@ void Peak_deg(const std_msgs::Int32MultiArray::Ptr &msg)
 	peak_in.data.clear();
 	peak_in.layout.data_offset = msg->layout.data_offset;
 	if(peak_in.layout.data_offset!=100){
-		for(int i=0;i<peak_in.layout.data_offset;i++){
+		for(unsigned int i=0;i<peak_in.layout.data_offset;i++){
 			peak_in.data.push_back(msg->data[i]);
 		}
 		callback_flag = true;
 		// cout<<"peak_callback"<<endl;
 	}
+}
+
+Node node[3];
+NodeEdgeManager* nem;
+void divCallback(const std_msgs::Int16MultiArray::ConstPtr& msg){
+	node[0] = nem->nodeGetter(msg->data[0]);
+	node[1] = nem->nodeGetter(msg->data[1]);
+	double ratio =  0.01 * msg->data[3];
+	node[2].x = node[0].x + ratio * (node[1].x - node[0].x);
+	node[2].y = node[0].y + ratio * (node[1].y - node[0].y);
 }
 
 geometry_msgs::Pose odom;
@@ -725,6 +737,8 @@ void Next_node(const std_msgs::Float32MultiArray msg)
 	}else if(msg.data[3]==2){//x-button
 		node_len = 1.0;
 		allow_error = 10;
+	}else if(msg.data[3]==3){//replan
+		node_len = sqrt(pow(node_x - node[2].x,2)+pow(node_y - node[2].y,2) );
 	}
 	update_node_flag = true;
 }
@@ -741,10 +755,15 @@ int main (int argc, char** argv)
     ros::Subscriber sub = nh.subscribe ("/peak/deg", 1, Peak_deg);
     ros::Subscriber sub_xy = nh.subscribe ("/next_xy", 1, Next_node);
     // ros::Subscriber sub = nh.subscribe ("/peak/deg2", 1, Peak_deg);
+	ros::Subscriber sub_div = n.subscribe<std_msgs::Int16MultiArray>("/edge/certain", 1, divCallback);
 	ros::Subscriber sub_lcl = n.subscribe("/lcl",1,OdomCallback);
     // Create a ROS publisher for the output point cloud
     flag_pub = nh.advertise<std_msgs::Bool> ("/intersection_flag", 1);
 
+
+	string filename;
+	n.getParam("/node_edge", filename);
+	nem = new NodeEdgeManager(filename);
 	//init
 	// for(int i=0;i<loop_count*4;i++){
 	// 	save_peak[i] = 0;
