@@ -21,6 +21,7 @@
 #include <infant_msgs/PointCloud2WithOdometry.h>
 #include <pcl/filters/voxel_grid.h>
 
+#include <std_msgs/Float64.h>
 #include <Eigen/Dense>
 #include <Eigen/Geometry>
 #include <Eigen/SVD>
@@ -38,10 +39,11 @@ bool odom_callback = false;
 bool points_callback = false;
 double d_x=0.0, d_y=0.0, d_z=0.0;
 double angle_x_=0.0, angle_y_=0.0, angle_z_=0.0;
-int loop = 13;
-double odom_threshold = 0.7;
+int loop = 11;
+double odom_threshold = 0.8;
 // int SAVE_SIZE = 10000;
-int SAVE_SIZE = 17000;
+// int SAVE_SIZE = 17000;
+int SAVE_SIZE = 25000;
 
 ros::Publisher shape_pub;
 ros::Publisher debug_pub;
@@ -192,6 +194,20 @@ void ZedCallback(infant_msgs::PointCloud2WithOdometry input){
 		// pubPointCloud2(debug_pub,zed_debug,"/aaaa",time);
 }
 
+bool intensity_flag = false;
+CloudAPtr intensity_cloud(new CloudA);
+void IntensityCallback(sensor_msgs::PointCloud2 msg)
+{
+	CloudAPtr intensity_tmp(new CloudA);
+	pcl::fromROSMsg(msg,*intensity_tmp);
+	pcl::VoxelGrid<pcl::PointXYZINormal> vg;  
+	vg.setInputCloud (intensity_tmp);  
+	vg.setLeafSize (0.15f, 0.15f, 0.15f);
+	vg.filter (*intensity_cloud);
+	intensity_flag = true;
+	cout<<"intensity cloud size:"<<intensity_cloud->points.size()<<endl;
+}
+
 void OdomCallback(const nav_msgs::Odometry input){
 	d_x = input.pose.pose.position.x;
 	d_y = input.pose.pose.position.y;
@@ -200,6 +216,13 @@ void OdomCallback(const nav_msgs::Odometry input){
 
 	odom_callback = true;
 }
+// CloudAPtr save_cloud (new CloudA);
+// double diff_yaw = 0.0;
+// void MnckCallback(const std_msgs::Float64 msg){
+// 	// diff_yaw = msg.data;
+// 	save_cloud->points.clear();
+// 	save_cloud->resize(SAVE_SIZE * loop);
+// }
 
 int main (int argc, char** argv)
 {
@@ -214,6 +237,8 @@ int main (int argc, char** argv)
     ros::Subscriber sub = nh.subscribe ("/local_cloud", 1, static_callback);
 	ros::Subscriber sub_lcl = n.subscribe("/lcl",1,OdomCallback);
 	ros::Subscriber sub_zed = n.subscribe("/movable_image/points",1,ZedCallback);
+	ros::Subscriber sub_intensity = n.subscribe("/intensity/remove",1,IntensityCallback);
+	// ros::Subscriber sub_mnck = n.subscribe("/flag/diff",1,MnckCallback);
     // Create a ROS publisher for the output point cloud
     shape_pub = nh.advertise<sensor_msgs::PointCloud2> ("/save_cloud", 1);
     debug_pub = nh.advertise<sensor_msgs::PointCloud2> ("/zed_debug", 1);
@@ -221,6 +246,7 @@ int main (int argc, char** argv)
 	// CloudAPtr conv_cloud (new CloudA);
 	CloudAPtr conv_cloud (new CloudA);
 	CloudAPtr conv_zed_cloud (new CloudA);
+	CloudAPtr conv_intensity_cloud (new CloudA);
 	CloudAPtr save_cloud (new CloudA);
 	save_cloud->resize(SAVE_SIZE * loop);
 	int save_count = 0;
@@ -236,11 +262,17 @@ int main (int argc, char** argv)
 			points_callback = false;
 			cnv(tmp_cloud, conv_cloud, d_x, d_y, d_z, angle_x_, angle_y_, angle_z_);
 			if(zed_flag){
+				cout<<"zed_convert"<<endl;
 				cnv(zed_cloud, conv_zed_cloud, d_x, d_y, d_z, angle_x_, angle_y_, angle_z_);
+			}
+			if(intensity_flag){
+				cout<<"intensity_points_convert"<<endl;
+				cnv(intensity_cloud, conv_intensity_cloud, d_x, d_y, d_z, angle_x_, angle_y_, angle_z_);
 			}
 			CloudA pub_cloud;
 			size_t cloud_size = conv_cloud->points.size();
 			size_t cloud_zed_size = conv_zed_cloud->points.size();
+			size_t cloud_intensity_size = conv_intensity_cloud->points.size();
 			if(max_size<cloud_size){
 				cout<<cloud_size<<endl;
 				max_size = cloud_size;
@@ -258,15 +290,23 @@ int main (int argc, char** argv)
 				}
 				// zed_flag = false;
 			}
+			if(intensity_flag){
+				for(size_t i = 0;i<cloud_intensity_size;i++){
+					Copy_point(conv_intensity_cloud->points[i],save_cloud->points[SAVE_SIZE*save_count+i+cloud_size+cloud_zed_size]);
+				}
+			}
 			PointA surplus;
 			surplus.x = 0;
 			surplus.y = 0;
 			surplus.z = 0;
+			omp_set_num_threads(4);
 			#pragma omp parallel for
-			for(size_t i = SAVE_SIZE*save_count+cloud_size+cloud_zed_size;i<SAVE_SIZE*(save_count+1);i++){
+			for(size_t i = SAVE_SIZE*save_count+cloud_size+cloud_zed_size+cloud_intensity_size;i<SAVE_SIZE*(save_count+1);i++){
 				Copy_point(surplus,save_cloud->points[i]);
 			}
 			///////////////////save_cloud/////////////////////////
+			// omp_set_num_threads(4);
+			// #pragma omp parallel for
 			for(size_t i=0;i<SAVE_SIZE*loop;i++){
 				pub_cloud.push_back(save_cloud->points[i]);
 			}
