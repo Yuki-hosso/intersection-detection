@@ -738,6 +738,7 @@ void Next_node(const std_msgs::Float32MultiArray msg)
 		node_len = 1.0;
 		allow_error = 10;
 	}else if(msg.data[3]==3){//replan
+		cout<<"replaning mode"<<endl;
 		node_len = sqrt(pow(node_x - node[2].x,2)+pow(node_y - node[2].y,2) );
 	}
 	update_node_flag = true;
@@ -761,9 +762,28 @@ int main (int argc, char** argv)
     flag_pub = nh.advertise<std_msgs::Bool> ("/intersection_flag", 1);
 
 
+	//init_param
+	cout<<"init_params"<<endl;
 	string filename;
+	int begin_node;
+	int end_node;
+	double div;
 	n.getParam("/node_edge", filename);
+	n.getParam("/init/node/begin", begin_node);
+	n.getParam("/init/node/end", end_node);
+	n.getParam("/init/node/div", div);
 	nem = new NodeEdgeManager(filename);
+
+	cout<<"begin_node"<<begin_node<<endl;
+	cout<<"end_node"<<end_node<<endl;
+	//end init_param
+
+	int edge_num = nem->edgeGetter(begin_node,end_node);
+	node_len = sqrt(nem->distGetter(edge_num)) * div;
+	Node node = nem->nodeGetter(end_node);
+	node_x = node.x;
+	node_y = node.y;
+
 	//init
 	// for(int i=0;i<loop_count*4;i++){
 	// 	save_peak[i] = 0;
