@@ -21,6 +21,7 @@
 #include <pcl/features/normal_3d.h>
 #include <boost/thread/thread.hpp>
 #include <pcl/filters/passthrough.h>
+#include<std_msgs/Float32MultiArray.h>
 
 using namespace std;
 using namespace Eigen;
@@ -77,8 +78,8 @@ inline double Diff(PointA velodyne)
 // }
 void Create_intensity_map_2(PointA &velodyne,CloudA &intensity)
 {
-	// if(velodyne.intensity/10.0>3.1){//long grass
-	// if(velodyne.intensity/10.0>2.1){//short grass
+	// if(velodyne.intensity/10.0>3.1&&Diff(velodyne)<=8.0&&Diff(velodyne)>=1.0){//long grass
+	// if(velodyne.intensity/10.0>2.1&&Diff(velodyne)<=8.0&&Diff(velodyne)>=1.0){//short grass
 	if(velodyne.intensity/10.0>1.1&&Diff(velodyne)<=8.0&&Diff(velodyne)>=1.0){//tsukuba rainy grass
 		// velodyne.z = velodyne.intensity/10.0 - 1.3;
 		velodyne.z = 0.0;
@@ -117,6 +118,14 @@ void point_callback(const sensor_msgs::PointCloud2ConstPtr& msg)
 	pcl::fromROSMsg(*msg,*tmp_cloud);
 	velodyne_flag = true;
 }
+
+bool finish_flag = false;
+void Next_node(const std_msgs::Float32MultiArray msg)
+{
+	if(msg.data[2]==8){//tsukuba_only
+		finish_flag = true;
+	}
+}
 int main (int argc, char** argv)
 {
     // Initialize ROS
@@ -127,6 +136,7 @@ int main (int argc, char** argv)
     // Create a ROS subscriber for the input point cloud
     // ros::Subscriber sub = nh.subscribe ("/velodyne_points", 1, velodyne_cb);
 	ros::Subscriber sub = n.subscribe("/velodyne_points",1,point_callback);
+    ros::Subscriber sub_xy = nh.subscribe ("/next_xy", 1, Next_node);
     // Create a ROS publisher for the output point cloud
     // gauss_pub = nh.advertise<sensor_msgs::PointCloud2> ("/normal_cloud", 1);
     // gauss_pub = nh.advertise<sensor_msgs::PointCloud2> ("/static_cloud2", 1);
@@ -139,6 +149,10 @@ int main (int argc, char** argv)
 		if(velodyne_flag){
 			velodyne_flag = false;
 			Intensity_threshold(tmp_cloud);
+		}
+		if(finish_flag){
+			cout<<"program finish!!!!"<<endl;
+			break;
 		}
         ros::spinOnce();
         loop_rate.sleep();
