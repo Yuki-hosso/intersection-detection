@@ -1,9 +1,7 @@
 //detect_peak_visu →  intersection_detection
 //走行した軌跡を利用して、交差点認識を行う
-//
+//2017/10/12 ikuta finish
 //tsukuba用のプログラムは別途intersection_detection_trajectory_rwrc17.cppに作成
-//
-//筑波用のプログラム
 //
 
 #include <ros/ros.h>
@@ -21,12 +19,13 @@
 #include <boost/thread/thread.hpp>
 #include <pcl/filters/passthrough.h>
 //
+#include<std_msgs/Int16MultiArray.h>
 #include<std_msgs/Int32MultiArray.h>
 #include<std_msgs/Float32MultiArray.h>
-#include<std_msgs/Float32.h>
 #include<geometry_msgs/Pose.h>
 #include <nav_msgs/Odometry.h>
 #include <std_msgs/Bool.h>
+#include "node_graph/node_edge_manager.h"
 
 using namespace std;
 using namespace Eigen;
@@ -46,10 +45,9 @@ bool screen_flag = false;
 bool odom_callback = false;
 bool update_node_flag = true;
 bool observ_flag = false; 
-bool door_flag = false;
+bool right_shape = false;
 
 const int loop_count = 10;
-// int loop_count = 20;
 int degree_count = 720;
 
 int save_number = loop_count*degree_count;
@@ -60,54 +58,7 @@ double node_y = -14.6942;
 double node_len = sqrt(pow(node_x,2)+pow(node_y,2));
 int allow_error = 0;
 
-// int save_peak[10*720];
 int save_peak[loop_count*4];
-// int save_peak[20*720];
-
-// void EM_algorithm(int* data)
-// {
-// 	for(int i=0;i<degree_count;i++){
-// 		cout<<i<<","<<data[i]<<endl;
-// 	}
-// }
-
-// void Intersection_detection(std_msgs::Int32MultiArray &input)
-// {
-// 	for(int i =0;i<degree_count;i++){
-// 		save_peak[save_count*degree_count+i] = 0;
-// 	}
-// 	if(input.layout.data_offset!=100){
-// 		for(int i=0;i<input.layout.data_offset;i++){
-// 			save_peak[save_count*degree_count + input.data[i]] = 1;
-// 			// cout<<"here!"<<endl;
-// 		}
-// 	}
-//
-// 	int integrate_peak[720];
-// 	//init
-// 	for(int i=0;i<degree_count;i++){
-// 		integrate_peak[i] = 0;
-// 	}
-// 	for(int i=0;i<degree_count;i++){
-// 		for(int j=0;j<loop_count;j++){
-// 			integrate_peak[i] += save_peak[j*degree_count + i];
-// 		}
-// 	}
-//
-// 	if(screen_flag==false){
-// 		if(save_count==loop_count-1){
-// 			screen_flag = true;
-// 		}
-// 	}
-// 	if(screen_flag){
-// 		for(int i=0;i<degree_count;i++){
-// 			cout<<i<<","<<integrate_peak[i]<<endl;
-// 		}
-// 	}
-//
-// 	save_count++;
-// 	save_count = save_count%loop_count;
-// }
 
 inline void INIT()
 {
@@ -132,7 +83,6 @@ inline bool intersection_traj_flag(geometry_msgs::Pose &odom,geometry_msgs::Pose
 }
 inline bool intersection_flag(geometry_msgs::Pose &odom,geometry_msgs::Pose &intersec_odom)
 {
-	// double difference = abs( sqrt( pow(odom.position.x,2)+pow(odom.position.y,2) ) - sqrt( pow(intersec_odom.position.x,2)+pow(intersec_odom.position.y,2) )  );
 	double difference = abs( sqrt( pow(odom.position.x-intersec_odom.position.x,2)+pow(odom.position.y-intersec_odom.position.y,2) )  );
 
 	// if(difference>1.0){
@@ -142,6 +92,8 @@ inline bool intersection_flag(geometry_msgs::Pose &odom,geometry_msgs::Pose &int
 		return false;
 	}
 }
+
+double divi = 0.85;
 inline bool intersection_flag_node(geometry_msgs::Pose &odom,geometry_msgs::Pose &intersec_odom)
 {
 	double distance = sqrt( pow(odom.position.x-intersec_odom.position.x,2)+pow(odom.position.y-intersec_odom.position.y,2) );
@@ -151,7 +103,7 @@ inline bool intersection_flag_node(geometry_msgs::Pose &odom,geometry_msgs::Pose
 	// }
 	cout<<distance<<":"<<node_len<<endl;
 	// if(distance>node_len*0.8){
-	if(distance>node_len*0.85){
+	if(distance>node_len*divi){
 		cout<<"true"<<endl;
 		return true;
 	}else{
@@ -264,22 +216,47 @@ void Intersec_init()
 	Init_deg();
 }
 
-void Peak_global(std_msgs::Int32MultiArray &peak,geometry_msgs::Pose &odom,std_msgs::Int32MultiArray &peak_global)
+void Peak_global(std_msgs::Int32MultiArray &peak,geometry_msgs::Pose &odom,std_msgs::Int32MultiArray &peak_global,double trajectory)
 {
 	peak_global.data.clear();
 	int deg = (int)((odom.orientation.z+M_PI)/M_PI*180.0);
-	int tmp_peak = 0;
-	for(int i=0;i<peak.layout.data_offset;i++){
-		tmp_peak =(int) peak.data[i]/2 - deg;
-		// if(tmp_peak<0){
-		// 	tmp_peak += 360;
-		// }
-		while(tmp_peak<0){
-			tmp_peak += 360;
+	int deg2 = (int)trajectory;
+	int deg_diff = abs(deg - deg2);
+	if(deg_diff>200){
+		if(deg>deg2){
+			deg_diff = deg2+360 - deg;
+		}else{
+			deg_diff = deg+360 - deg2;
 		}
-		peak_global.layout.data_offset = peak.layout.data_offset;
-		peak_global.data.push_back(tmp_peak);
-		// cout<<"global_peak"<<tmp_peak<<endl;
+	}
+
+	int tmp_peak = 0;
+	if(deg>deg2){
+		for(unsigned int i=0;i<peak.layout.data_offset;i++){
+			tmp_peak =(int) peak.data[i]/2 - deg_diff;
+			// if(tmp_peak<0){
+			// 	tmp_peak += 360;
+			// }
+			while(tmp_peak<0){
+				tmp_peak += 360;
+			}
+			peak_global.layout.data_offset = peak.layout.data_offset;
+			peak_global.data.push_back(tmp_peak);
+			// cout<<"global_peak"<<tmp_peak<<endl;
+		}
+	}else{
+		for(unsigned int i=0;i<peak.layout.data_offset;i++){
+			tmp_peak =(int) peak.data[i]/2 + deg_diff;
+			// if(tmp_peak<0){
+			// 	tmp_peak += 360;
+			// }
+			while(tmp_peak>360){
+				tmp_peak -= 360;
+			}
+			peak_global.layout.data_offset = peak.layout.data_offset;
+			peak_global.data.push_back(tmp_peak);
+			// cout<<"global_peak"<<tmp_peak<<endl;
+		}
 	}
 	cout<<"original"<<peak<<endl;
 	cout<<"global"<<peak_global<<endl;
@@ -297,8 +274,9 @@ int observ_mode = 0;
 void Intersection_detection(std_msgs::Int32MultiArray &peak,geometry_msgs::Pose &odom,geometry_msgs::Pose &intersec_odom,double trajectory)
 {
 	int diff_tra = 0;
-	for(int i=0;i<peak.layout.data_offset;i++){
-		diff_tra = peak.data[i] - (int)trajectory;
+	for(unsigned int i=0;i<peak.layout.data_offset;i++){
+		// diff_tra = peak.data[i] - (int)trajectory;
+		diff_tra = peak.data[i];
 		if(diff_tra<0){
 			diff_tra += 360;
 		}
@@ -375,36 +353,23 @@ void Intersection_detection(std_msgs::Int32MultiArray &peak,geometry_msgs::Pose 
 		}
 		if(tmp[1]>3||tmp[3]>3){
 			observ_flag = true;
+			if(right_shape){
+				if(tmp[1]<4&&tmp[3]>3){
+					observ_flag = false;
+					tmp[3]=0;
+				}
+			}
 			if(tmp[1]>3&&tmp[3]>3){
 				observ_mode = 1;
 			}else if(tmp[1]>3){
 				observ_mode = 2;
-			}else{
+			}else if(tmp[3]>3){
 				observ_mode = 3;
 			}
 			cout<<"observ mode"<<observ_mode<<endl;
-			// cout<<"intersection!!!!!!!!!!!!!!!!!!!!"<<endl;
-			// intersec_odom.position.x = odom.position.x;
-			// intersec_odom.position.y = odom.position.y;
-			// intersec_odom.position.z = odom.position.z;
-			// // INIT();
-			// std_msgs::Bool intersec;
-			// intersec.data = true;
-			// update_node_flag = false;
-			// flag_pub.publish(intersec);
-			// // cout<<tmp[0]<<endl;
-			// // cout<<tmp[1]<<endl;
-			// // cout<<tmp[2]<<endl;
-			// // cout<<tmp[3]<<endl;
-			// // INIT();
-			// Intersec_init();
 		}
 		if(tmp[0]>5||tmp[2]>5){
 			cout<<"road!"<<endl;
-			// cout<<tmp[0]<<endl;
-			// cout<<tmp[1]<<endl;
-			// cout<<tmp[2]<<endl;
-			// cout<<tmp[3]<<endl;
 		}
 		insc_flag = false;
 	}else{
@@ -413,7 +378,6 @@ void Intersection_detection(std_msgs::Int32MultiArray &peak,geometry_msgs::Pose 
 			save_peak[(save_count%loop_count)*4+1] = 0;
 			save_peak[(save_count%loop_count)*4+2] = 0;
 			save_peak[(save_count%loop_count)*4+3] = 0;
-			// INIT();
 	}
 	save_count++;
 }
@@ -442,7 +406,7 @@ void Observ_function(std_msgs::Int32MultiArray &peak,geometry_msgs::Pose odom,ge
 					diff_tra_four += 360;
 				}
 
-				for(int i=0;i<peak.layout.data_offset;i++){
+				for(unsigned int i=0;i<peak.layout.data_offset;i++){
 					diff_tra = peak.data[i] - (int)trajectory;
 					if(diff_tra<0){
 						diff_tra += 360;
@@ -472,7 +436,7 @@ void Observ_function(std_msgs::Int32MultiArray &peak,geometry_msgs::Pose odom,ge
 								update_count_two++;
 							}
 						}
-					}else if(abs(diff_tra_two - diff_tra)<(20+allow_error)){
+					}else if(abs(diff_tra_two - diff_tra)<(12+allow_error)){
 						update_count_two++;
 					}
 					if(abs(diff_tra_four - diff_tra)<(10+allow_error)){
@@ -498,7 +462,7 @@ void Observ_function(std_msgs::Int32MultiArray &peak,geometry_msgs::Pose odom,ge
 								update_count_four++;
 							}
 						}
-					}else if(abs(diff_tra_four - diff_tra)<(20+allow_error)){
+					}else if(abs(diff_tra_four - diff_tra)<(12+allow_error)){
 						update_count_four++;
 					}
 				}
@@ -518,7 +482,7 @@ void Observ_function(std_msgs::Int32MultiArray &peak,geometry_msgs::Pose odom,ge
 					diff_tra_old += 360;
 				}
 
-				for(int i=0;i<peak.layout.data_offset;i++){
+				for(unsigned int i=0;i<peak.layout.data_offset;i++){
 					diff_tra = peak.data[i] - (int)trajectory;
 					if(diff_tra<0){
 						diff_tra += 360;
@@ -552,7 +516,7 @@ void Observ_function(std_msgs::Int32MultiArray &peak,geometry_msgs::Pose odom,ge
 								update_count++;
 							}
 						}
-					}else if(abs(diff_tra_old - diff_tra)<(20+allow_error)){
+					}else if(abs(diff_tra_old - diff_tra)<(12+allow_error)){
 						update_count++;
 					}
 				}
@@ -572,7 +536,7 @@ void Observ_function(std_msgs::Int32MultiArray &peak,geometry_msgs::Pose odom,ge
 					diff_tra_old += 360;
 				}
 
-				for(int i=0;i<peak.layout.data_offset;i++){
+				for(unsigned int i=0;i<peak.layout.data_offset;i++){
 					diff_tra = peak.data[i] - (int)trajectory;
 					if(diff_tra<0){
 						diff_tra += 360;
@@ -603,7 +567,7 @@ void Observ_function(std_msgs::Int32MultiArray &peak,geometry_msgs::Pose odom,ge
 								update_count++;
 							}
 						}
-					}else if(abs(diff_tra_old - diff_tra)<(20+allow_error)){
+					}else if(abs(diff_tra_old - diff_tra)<(12+allow_error)){
 						update_count++;
 					}
 				}
@@ -620,7 +584,7 @@ void Observ_function(std_msgs::Int32MultiArray &peak,geometry_msgs::Pose odom,ge
 			}
 	}
 
-	if(non_update>10){
+	if(non_update>6){
 		cout<<"NON OBSERV"<<endl;
 		// intersection_detection = true;
 		non_update = 0;
@@ -665,7 +629,7 @@ void Peak_deg(const std_msgs::Int32MultiArray::Ptr &msg)
 	peak_in.data.clear();
 	peak_in.layout.data_offset = msg->layout.data_offset;
 	if(peak_in.layout.data_offset!=100){
-		for(int i=0;i<peak_in.layout.data_offset;i++){
+		for(unsigned int i=0;i<peak_in.layout.data_offset;i++){
 			peak_in.data.push_back(msg->data[i]);
 		}
 		callback_flag = true;
@@ -673,13 +637,18 @@ void Peak_deg(const std_msgs::Int32MultiArray::Ptr &msg)
 	}
 }
 
-//callback
-void Door_callback(std_msgs::Float32 msg)
-{
-	door_flag = true; //door_flag の切り替えは node を利用して行う予定
+Node node[3];
+NodeEdgeManager* nem;
+void divCallback(const std_msgs::Int16MultiArray::ConstPtr& msg){
+	node[0] = nem->nodeGetter(msg->data[0]);
+	node[1] = nem->nodeGetter(msg->data[1]);
+	double ratio =  0.01 * msg->data[2];
+	node[2].x = node[0].x + ratio * (node[1].x - node[0].x);
+	node[2].y = node[0].y + ratio * (node[1].y - node[0].y);
 }
 
 geometry_msgs::Pose odom;
+geometry_msgs::Pose intersec_odom;
 void OdomCallback(const nav_msgs::OdometryConstPtr& input){
 	odom.position.x = input->pose.pose.position.x;
 	odom.position.y = input->pose.pose.position.y;
@@ -687,10 +656,14 @@ void OdomCallback(const nav_msgs::OdometryConstPtr& input){
 	odom.orientation.z = input->pose.pose.orientation.z;
 	// cout<<"odom_callback"<<endl;
 
+	if(intersec_odom.position.x==0&&intersec_odom.position.y==0){
+		intersec_odom.position.x = odom.position.x;
+		intersec_odom.position.y = odom.position.y;
+		intersec_odom.position.z = odom.position.z;
+	}
 	odom_callback = true;
 }
 
-geometry_msgs::Pose intersec_odom;
 void Next_node(const std_msgs::Float32MultiArray msg)
 {
 	node_len = sqrt(pow(node_x-msg.data[0],2)+pow(node_y-msg.data[1],2) );
@@ -709,13 +682,27 @@ void Next_node(const std_msgs::Float32MultiArray msg)
 	}else if(msg.data[3]==2){//x-button
 		node_len = 1.0;
 		allow_error = 10;
+	}else if(msg.data[3]==3){//replan
+		cout<<"replaning mode"<<endl;
+		intersec_odom.position.x = odom.position.x;
+		intersec_odom.position.y = odom.position.y;
+		intersec_odom.position.z = odom.position.z;
+		node_len = sqrt(pow(node_x - node[2].x,2)+pow(node_y - node[2].y,2) );
+	}
+
+	divi = 0.85;
+	// if(msg.data[2]==17){//ikuta param
+	// 	divi = 0.9;
+	// }
+
+
+	// if(msg.data[2]==7||msg.data[2]==8){
+	if(msg.data[2]==8){
+		right_shape = true;
+	}else{
+		right_shape = false;
 	}
 	update_node_flag = true;
-
-	int specific_node = 100;
-	if(msg.data[2]==specific_node){
-		door_flag = false;
-	}
 }
 
 int main (int argc, char** argv)
@@ -726,24 +713,44 @@ int main (int argc, char** argv)
     ros::NodeHandle n;
 
     // Create a ROS subscriber for the input point cloud
-    // ros::Subscriber sub = nh.subscribe ("/velodyne_points", 1, velodyne_cb);
     ros::Subscriber sub = nh.subscribe ("/peak/deg", 1, Peak_deg);
     ros::Subscriber sub_xy = nh.subscribe ("/next_xy", 1, Next_node);
-    ros::Subscriber door_sub = nh.subscribe ("/door/closed/rad", 1, Door_callback);
-    // ros::Subscriber sub = nh.subscribe ("/peak/deg2", 1, Peak_deg);
+	ros::Subscriber sub_div = n.subscribe<std_msgs::Int16MultiArray>("/edge/certain", 1, divCallback);
 	ros::Subscriber sub_lcl = n.subscribe("/lcl",1,OdomCallback);
     // Create a ROS publisher for the output point cloud
     flag_pub = nh.advertise<std_msgs::Bool> ("/intersection_flag", 1);
 
+
+	//init_param
+	cout<<"init_params"<<endl;
+	string filename;
+	int begin_node;
+	int end_node;
+	double div;
+	n.getParam("/node_edge", filename);
+	n.getParam("/init/node/begin", begin_node);
+	n.getParam("/init/node/end", end_node);
+	n.getParam("/init/node/div", div);
+	nem = new NodeEdgeManager(filename);
+
+	cout<<"begin_node"<<begin_node<<endl;
+	cout<<"end_node"<<end_node<<endl;
+	//end init_param
+
+	int edge_num = nem->edgeGetter(begin_node,end_node);
+	node_len = sqrt(nem->distGetter(edge_num)) * (1-div);
+	Node node = nem->nodeGetter(end_node);
+	node_x = node.x;
+	node_y = node.y;
+
+	intersec_odom.position.x = 0.0;
+	intersec_odom.position.y = 0.0;
+	intersec_odom.position.z = 0.0;
 	//init
-	// for(int i=0;i<loop_count*4;i++){
-	// 	save_peak[i] = 0;
-	// }
 	INIT();
 	Init_deg();
 	cout<<"init"<<endl;
 	//
-	// geometry_msgs::Pose intersec_odom;
 	std_msgs::Int32MultiArray peak_global;
 	double trajectory = 0.0;
     // main handle
@@ -757,20 +764,16 @@ int main (int argc, char** argv)
 				// trajectory = trajectory_estimate(odom);
 				trajectory = trajectory_estimate_unliner(odom,trajectory);
 			}
-			Peak_global(peak_in,odom,peak_global);
-			if(door_flag){
-				cout<<"Zakiyama Recognition"<<endl;
-			}else{
-				// if(intersection_flag(odom,intersec_odom)){  //////change here
-				if(intersection_flag_node(odom,intersec_odom)&&update_node_flag){  /////change here
-					// Intersection_detection(peak_in,odom,intersec_odom);
-					if(observ_flag){
-						cout<<"observ_function"<<endl;
-						Observ_function(peak_global,odom,intersec_odom,trajectory);
-					}else{
-						cout<<"detection_function"<<endl;
-						Intersection_detection(peak_global,odom,intersec_odom,trajectory);
-					}
+			Peak_global(peak_in,odom,peak_global,trajectory);
+			// if(intersection_flag(odom,intersec_odom)){  //////change here
+			if(intersection_flag_node(odom,intersec_odom)&&update_node_flag){  /////change here
+				// Intersection_detection(peak_in,odom,intersec_odom);
+				if(observ_flag){
+					cout<<"observ_function"<<endl;
+					Observ_function(peak_global,odom,intersec_odom,trajectory);
+				}else{
+					cout<<"detection_function"<<endl;
+					Intersection_detection(peak_global,odom,intersec_odom,trajectory);
 				}
 			}
 		}
