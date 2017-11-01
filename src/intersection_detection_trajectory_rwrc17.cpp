@@ -25,7 +25,7 @@
 #include<geometry_msgs/Pose.h>
 #include <nav_msgs/Odometry.h>
 #include <std_msgs/Bool.h>
-#include "node_graph/node_edge_manager.h"
+#include "lf/node_edge_manager.h"
 
 using namespace std;
 using namespace Eigen;
